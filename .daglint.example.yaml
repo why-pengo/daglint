@@ -1,0 +1,54 @@
+rules:
+  dag_id_convention:
+    enabled: true
+    pattern: "^[a-z][a-z0-9_]*$"
+    severity: error
+
+  owner_validation:
+    enabled: true
+    valid_owners:
+      - data-team
+      - analytics-team
+      - airflow
+    severity: error
+
+  task_id_convention:
+    enabled: true
+    pattern: "^[a-z][a-z0-9_]*$"
+    severity: error
+
+  retry_configuration:
+    enabled: true
+    min_retries: 1
+    max_retries: 5
+    severity: warning
+
+  tag_requirements:
+    enabled: true
+    required_tags:
+      - environment
+      - team
+    severity: warning
+
+  schedule_validation:
+    enabled: true
+    allow_none: false
+    severity: warning
+
+  no_duplicate_task_ids:
+    enabled: true
+    severity: error
+
+  required_dag_params:
+    enabled: true
+    required_params:
+      - owner
+      - start_date
+      - retries
+    severity: error
+
+  catchup_validation:
+    enabled: true
+    default_catchup: false
+    severity: warning
+

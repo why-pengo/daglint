@@ -1,0 +1,62 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-checks:
+    name: Pull Request Validation
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install -r requirements-dev.txt
+
+    - name: Run all tests
+      run: |
+        pytest tests/ -v --cov=daglint --cov-report=term
+
+    - name: Check test results
+      if: failure()
+      run: |
+        echo "Tests failed! Please fix the failing tests before merging."
+        exit 1
+
+    - name: Verify code quality
+      run: |
+        flake8 src/daglint --count --max-line-length=127 --statistics
+        black --check src/daglint tests
+        isort --check-only src/daglint tests
+
+    - name: Comment PR with test results
+      if: always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const status = '${{ job.status }}';
+          const message = status === 'success' 
+            ? '✅ All tests passed! This PR is ready for review.'
+            : '❌ Some checks failed. Please review the logs and fix the issues.';
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: message
+          });
+
