@@ -4,22 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "daglint"
-version = "0.1.0"
+version = "0.5.0"
 description = "A linting tool for Apache Airflow DAG files"
 readme = "README.md"
-authors = [{name = "DAGLint Contributors"}]
-license = "MIT"
-requires-python = ">=3.8"
+authors = [{name = "Jon Morgan", email = "morgan.jon@gmail.com"}]
+license = {file = "LICENSE" }
+requires-python = ">=3.9"
 classifiers = [
+    "License :: OSI Approved :: MIT License",
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Quality Assurance",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
 ]
+keywords = ["airflow", "dag", "lint", "linting", "static analysis", "code quality"]
 dependencies = [
     "click>=8.0.0",
     "pyyaml>=5.4.0",
@@ -37,6 +38,7 @@ dev = [
     "setuptools>=65.0.0",
     "build>=0.10.0",
     "wheel>=0.38.0",
+    "bumpver>=2023.1126",
 ]
 
 [project.scripts]
@@ -113,7 +115,7 @@ exclude_lines = [
 ]
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.9"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
@@ -128,3 +130,27 @@ strict_equality = true
 [[tool.mypy.overrides]]
 module = "tests.*"
 ignore_errors = true
+
+[tool.bumpver]
+current_version = "0.5.0"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "bump version {old_version} -> {new_version}"
+commit = true
+tag = true
+push = false
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = [
+    'current_version = "{version}"',
+    'version = "{version}"',
+]
+"src/daglint/__init__.py" = [
+    '__version__ = "{version}"',
+]
+"PROJECT_SUMMARY.md" = [
+    '**Version:** {version}',
+]
+"DEPLOYMENT.md" = [
+    '**Version**: {version}',
+]
+

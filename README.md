@@ -99,6 +99,24 @@ rules:
 ./dev.sh help
 ```
 
+### Version Management
+
+This project uses [bumpver](https://github.com/mbarkhau/bumpver) to manage version numbers. See [VERSION_MANAGEMENT.md](VERSION_MANAGEMENT.md) for detailed usage instructions.
+
+```bash
+# Preview version bump (dry run)
+bumpver update --patch --dry --no-fetch
+
+# Bump patch version (0.5.0 -> 0.5.1)
+bumpver update --patch --no-fetch
+
+# Bump minor version (0.5.0 -> 0.6.0)
+bumpver update --minor --no-fetch
+
+# Bump major version (0.5.0 -> 1.0.0)
+bumpver update --major --no-fetch
+```
+
 ## License
 
 MIT
