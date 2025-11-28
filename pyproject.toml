@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "daglint"
-version = "0.5.0"
+version = "0.6.0"
 description = "A linting tool for Apache Airflow DAG files"
 readme = "README.md"
 authors = [{name = "Jon Morgan", email = "morgan.jon@gmail.com"}]
@@ -133,7 +133,7 @@ module = "tests.*"
 ignore_errors = true
 
 [tool.bumpver]
-current_version = "0.5.0"
+current_version = "0.6.0"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump version {old_version} -> {new_version}"
 commit = true

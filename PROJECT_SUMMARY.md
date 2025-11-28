@@ -211,6 +211,6 @@ MIT License - See [LICENSE](LICENSE) file for details.
 ---
 
 **Project Status**: ✅ Fully functional and tested
-**Version:** 0.5.0
+**Version:** 0.6.0
 **Last Updated**: November 22, 2025
 
