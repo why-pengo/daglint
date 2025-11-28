@@ -46,8 +46,7 @@ def _print_issue(issue):
     """Print a single linting issue."""
     severity_color = Fore.RED if issue.severity == "error" else Fore.YELLOW
     click.echo(
-        f"  {severity_color}{issue.severity.upper()}{Style.RESET_ALL} "
-        f"[{issue.rule_id}] Line {issue.line}: {issue.message}"
+        f"  {severity_color}{issue.severity.upper()}{Style.RESET_ALL} " f"[{issue.rule_id}] Line {issue.line}: {issue.message}"
     )
 
 
