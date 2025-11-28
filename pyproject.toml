@@ -9,7 +9,6 @@ description = "A linting tool for Apache Airflow DAG files"
 readme = "README.md"
 authors = [{name = "DAGLint Contributors"}]
 license = "MIT"
-license-files = ["LICENSE"]
 requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 3 - Alpha",

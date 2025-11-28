@@ -22,6 +22,45 @@ def cli():
     pass
 
 
+def _load_config(config_path: Optional[str]) -> Config:
+    """Load configuration from file or use default."""
+    if config_path:
+        return Config.from_file(config_path)
+
+    # Look for .daglint.yaml in current directory
+    default_config = Path(".daglint.yaml")
+    if default_config.exists():
+        return Config.from_file(str(default_config))
+
+    return Config.default()
+
+
+def _collect_files(target_path: Path) -> list:
+    """Collect Python files to lint."""
+    if target_path.is_file():
+        return [target_path]
+    return list(target_path.rglob("*.py"))
+
+
+def _print_issue(issue):
+    """Print a single linting issue."""
+    severity_color = Fore.RED if issue.severity == "error" else Fore.YELLOW
+    click.echo(
+        f"  {severity_color}{issue.severity.upper()}{Style.RESET_ALL} " f"[{issue.rule_id}] Line {issue.line}: {issue.message}"
+    )
+
+
+def _print_summary(total_issues: int, file_count: int):
+    """Print summary of linting results."""
+    click.echo(f"\n{'-' * 50}")
+    if total_issues == 0:
+        click.echo(f"{Fore.GREEN}All checks passed!{Style.RESET_ALL}")
+        sys.exit(0)
+    else:
+        click.echo(f"{Fore.RED}Found {total_issues} issue(s) in {file_count} file(s).{Style.RESET_ALL}")
+        sys.exit(1)
+
+
 @cli.command()
 @click.argument("path", type=click.Path(exists=True), required=True)
 @click.option("--config", "-c", type=click.Path(exists=True), help="Path to configuration file")
@@ -36,15 +75,7 @@ def check(path: str, config: Optional[str], rules: Optional[str], verbose: bool,
     target_path = Path(path)
 
     # Load configuration
-    if config:
-        cfg = Config.from_file(config)
-    else:
-        # Look for .daglint.yaml in current directory
-        default_config = Path(".daglint.yaml")
-        if default_config.exists():
-            cfg = Config.from_file(str(default_config))
-        else:
-            cfg = Config.default()
+    cfg = _load_config(config)
 
     # Override rules if specified
     if rules:
@@ -52,11 +83,7 @@ def check(path: str, config: Optional[str], rules: Optional[str], verbose: bool,
         cfg.set_active_rules(rule_list)
 
     # Collect files to lint
-    files_to_check = []
-    if target_path.is_file():
-        files_to_check.append(target_path)
-    else:
-        files_to_check.extend(target_path.rglob("*.py"))
+    files_to_check = _collect_files(target_path)
 
     if not files_to_check:
         click.echo(f"{Fore.YELLOW}No Python files found to check.{Style.RESET_ALL}")
@@ -76,22 +103,12 @@ def check(path: str, config: Optional[str], rules: Optional[str], verbose: bool,
             total_issues += len(issues)
             click.echo(f"\n{Fore.RED}✗ {file_path}{Style.RESET_ALL}")
             for issue in issues:
-                severity_color = Fore.RED if issue.severity == "error" else Fore.YELLOW
-                click.echo(
-                    f"  {severity_color}{issue.severity.upper()}{Style.RESET_ALL} "
-                    f"[{issue.rule_id}] Line {issue.line}: {issue.message}"
-                )
+                _print_issue(issue)
         else:
             click.echo(f"{Fore.GREEN}✓ {file_path}{Style.RESET_ALL}")
 
-    # Summary
-    click.echo(f"\n{'-' * 50}")
-    if total_issues == 0:
-        click.echo(f"{Fore.GREEN}All checks passed!{Style.RESET_ALL}")
-        sys.exit(0)
-    else:
-        click.echo(f"{Fore.RED}Found {total_issues} issue(s) in {len(files_to_check)} file(s).{Style.RESET_ALL}")
-        sys.exit(1)
+    # Print summary
+    _print_summary(total_issues, len(files_to_check))
 
 
 @cli.command()

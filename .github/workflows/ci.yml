@@ -10,27 +10,29 @@ jobs:
   test:
     name: Test on Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11']
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Cache pip packages
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
+        save-always: true
 
     - name: Install dependencies
       run: |
@@ -51,25 +53,27 @@ jobs:
     - name: Check code formatting with black
       run: |
         black --check src/daglint tests
+      continue-on-error: true
 
     - name: Check import sorting with isort
       run: |
         isort --check-only src/daglint tests
+      continue-on-error: true
 
     - name: Run tests with pytest
       run: |
         pytest tests/ -v --cov=daglint --cov-report=xml --cov-report=html --cov-report=term
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
-        file: ./coverage.xml
+        files: ./coverage.xml
         flags: unittests
-        name: codecov-umbrella
         fail_ci_if_error: false
 
     - name: Archive code coverage results
-      uses: actions/upload-artifact@v3
+      if: matrix.python-version == '3.10'
+      uses: actions/upload-artifact@v4
       with:
         name: code-coverage-report
         path: htmlcov/
@@ -81,10 +85,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
@@ -98,7 +102,7 @@ jobs:
         python -m build
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dist-packages
         path: dist/

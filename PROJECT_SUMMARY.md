@@ -19,13 +19,19 @@ daglint/
 │       ├── config.py           # Configuration management
 │       ├── linter.py           # Core linting engine
 │       ├── models.py           # Data models (LintIssue)
-│       └── rules.py            # Linting rules implementation
+│       └── rules/              # Linting rules (modular structure)
+│           ├── __init__.py     # Rules registry and exports
+│           ├── base.py         # BaseRule abstract class
+│           ├── naming.py       # Naming convention rules
+│           ├── configuration.py # Configuration validation rules
+│           ├── metadata.py     # Metadata and documentation rules
+│           └── validation.py   # Structural validation rules
 ├── tests/
 │   ├── __init__.py
 │   ├── test_cli.py             # CLI tests
 │   ├── test_config.py          # Configuration tests
 │   ├── test_linter.py          # Linter tests
-│   └── test_rules.py           # Rules tests (39 tests total)
+│   └── test_rules.py           # Rules tests (21 tests total)
 ├── examples/
 │   ├── valid_dag.py            # Example of a compliant DAG
 │   └── invalid_dag.py          # Example with multiple violations
@@ -92,7 +98,7 @@ Uses YAML-based configuration (`.daglint.yaml`) with per-rule settings:
 
 1. **ci.yml** - Main CI pipeline
    - Runs on: Push to main/develop, Pull Requests
-   - Tests on: Python 3.8, 3.9, 3.10, 3.11
+   - Tests on: Python 3.9, 3.10, 3.11
    - Steps:
      - Code checkout
      - Dependency installation with caching
@@ -153,7 +159,7 @@ Coverage: 94%
 
 ## Key Technologies
 
-- **Python 3.8+**: Core language
+- **Python 3.9+**: Core language
 - **Click 8.0+**: Command-line interface framework
 - **PyYAML 5.4+**: Configuration file parsing
 - **Colorama**: Cross-platform colored terminal output

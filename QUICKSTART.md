@@ -2,8 +2,8 @@
 
 ## Installation
 
+### From the project root, install in editable mode:
 ```bash
-cd /Volumes/Crucial\ X9/workspace/daglint
 pip install -e .
 ```
 
@@ -107,7 +107,7 @@ rules:
 ## CI/CD Integration
 
 The project includes GitHub Actions workflows that:
-- Run tests on Python 3.8, 3.9, 3.10, 3.11
+- Run tests on Python 3.9, 3.10, 3.11
 - Check code quality (black, flake8, isort, mypy)
 - Generate coverage reports
 - Validate pull requests
