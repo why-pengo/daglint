@@ -98,7 +98,7 @@ Uses YAML-based configuration (`.daglint.yaml`) with per-rule settings:
 
 1. **ci.yml** - Main CI pipeline
    - Runs on: Push to main/develop, Pull Requests
-   - Tests on: Python 3.8, 3.9, 3.10, 3.11
+   - Tests on: Python 3.9, 3.10, 3.11
    - Steps:
      - Code checkout
      - Dependency installation with caching
@@ -159,7 +159,7 @@ Coverage: 94%
 
 ## Key Technologies
 
-- **Python 3.8+**: Core language
+- **Python 3.9+**: Core language
 - **Click 8.0+**: Command-line interface framework
 - **PyYAML 5.4+**: Configuration file parsing
 - **Colorama**: Cross-platform colored terminal output
