@@ -319,9 +319,9 @@ You can validate versions are synchronized:
 # Ensure all version strings match
 python -c "
 from importlib.metadata import version
-import tomllib
+import tomli
 with open('pyproject.toml', 'rb') as f:
-    toml = tomllib.load(f)
+    toml = tomli.load(f)
 assert toml['project']['version'] == version('daglint')
 "
 ```
