@@ -261,6 +261,7 @@ default_args = {
         assert len(issues) == 1
         assert "Missing required parameters" in issues[0].message
 
+
 class TestCatchupValidationRule:
     """Tests for catchup validation rule."""
 

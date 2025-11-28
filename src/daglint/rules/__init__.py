@@ -40,4 +40,3 @@ __all__ = [
     "ScheduleValidationRule",
     "AVAILABLE_RULES",
 ]
-

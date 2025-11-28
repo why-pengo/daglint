@@ -65,4 +65,3 @@ class BaseRule(ABC):
             column=column,
             severity=self.severity,
         )
-

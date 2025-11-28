@@ -134,4 +134,3 @@ class ScheduleValidationRule(BaseRule):
             if keyword.arg in ("schedule_interval", "schedule"):
                 return keyword.value
         return None
-

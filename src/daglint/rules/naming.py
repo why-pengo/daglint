@@ -115,4 +115,3 @@ class TaskIDConventionRule(BaseRule):
                 if isinstance(keyword.value, ast.Constant):
                     return keyword.value.value
         return None
-
