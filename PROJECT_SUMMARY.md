@@ -19,13 +19,19 @@ daglint/
 │       ├── config.py           # Configuration management
 │       ├── linter.py           # Core linting engine
 │       ├── models.py           # Data models (LintIssue)
-│       └── rules.py            # Linting rules implementation
+│       └── rules/              # Linting rules (modular structure)
+│           ├── __init__.py     # Rules registry and exports
+│           ├── base.py         # BaseRule abstract class
+│           ├── naming.py       # Naming convention rules
+│           ├── configuration.py # Configuration validation rules
+│           ├── metadata.py     # Metadata and documentation rules
+│           └── validation.py   # Structural validation rules
 ├── tests/
 │   ├── __init__.py
 │   ├── test_cli.py             # CLI tests
 │   ├── test_config.py          # Configuration tests
 │   ├── test_linter.py          # Linter tests
-│   └── test_rules.py           # Rules tests (39 tests total)
+│   └── test_rules.py           # Rules tests (21 tests total)
 ├── examples/
 │   ├── valid_dag.py            # Example of a compliant DAG
 │   └── invalid_dag.py          # Example with multiple violations
