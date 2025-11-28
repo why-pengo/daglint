@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "daglint"
-version = "0.5.0"
+version = "0.6.0"
 description = "A linting tool for Apache Airflow DAG files"
 readme = "README.md"
 authors = [{name = "Jon Morgan", email = "morgan.jon@gmail.com"}]
@@ -39,14 +39,15 @@ dev = [
     "build>=0.10.0",
     "wheel>=0.38.0",
     "bumpver>=2023.1126",
+    "twine>=4.0.0",
 ]
 
 [project.scripts]
 daglint = "daglint.cli:cli"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/daglint"
-Repository = "https://github.com/yourusername/daglint"
+Homepage = "https://github.com/why-pengo/daglint"
+Repository = "https://github.com/why-pengo/daglint"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -132,7 +133,7 @@ module = "tests.*"
 ignore_errors = true
 
 [tool.bumpver]
-current_version = "0.5.0"
+current_version = "0.6.0"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump version {old_version} -> {new_version}"
 commit = true
