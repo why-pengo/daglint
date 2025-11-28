@@ -1,7 +1,7 @@
 """Rules for validation of DAG structure and uniqueness."""
 
 import ast
-from typing import List, Optional
+from typing import List
 
 from daglint.models import LintIssue
 from daglint.rules.base import BaseRule
@@ -40,19 +40,3 @@ class NoDuplicateTaskIDsRule(BaseRule):
                             task_ids[task_id] = node.lineno
 
         return issues
-
-    def _is_operator_call(self, node: ast.Call) -> bool:
-        """Check if a call is an operator instantiation."""
-        if isinstance(node.func, ast.Name):
-            return node.func.id.endswith("Operator")
-        elif isinstance(node.func, ast.Attribute):
-            return node.func.attr.endswith("Operator")
-        return False
-
-    def _extract_task_id(self, node: ast.Call) -> Optional[str]:
-        """Extract task_id from an operator call."""
-        for keyword in node.keywords:
-            if keyword.arg == "task_id":
-                if isinstance(keyword.value, ast.Constant):
-                    return keyword.value.value
-        return None
