@@ -193,26 +193,102 @@ repos:
         files: \.py$
 ```
 
-## Publishing to PyPI (Future)
+## Publishing to PyPI
 
-When ready to publish:
+When ready to publish a new version:
 
-1. **Update version** in `setup.py` and `src/daglint/__init__.py`
+### 1. Update Version with Bumpver
 
-2. **Build package**
-   ```bash
-   python -m build
-   ```
+```bash
+# Preview the version bump
+bumpver update --patch --dry --no-fetch   # Bug fixes: 0.5.0 -> 0.5.1
+bumpver update --minor --dry --no-fetch   # New features: 0.5.0 -> 0.6.0
+bumpver update --major --dry --no-fetch   # Breaking changes: 0.5.0 -> 1.0.0
 
-3. **Test on TestPyPI**
-   ```bash
-   python -m twine upload --repository testpypi dist/*
-   ```
+# Apply the version bump (updates all files, creates commit and tag)
+bumpver update --minor --no-fetch
+```
 
-4. **Publish to PyPI**
-   ```bash
-   python -m twine upload dist/*
-   ```
+This automatically updates:
+- `pyproject.toml` (2 locations)
+- `src/daglint/__init__.py`
+- `PROJECT_SUMMARY.md`
+- `DEPLOYMENT.md`
+
+### 2. Build Distribution Packages
+
+```bash
+# Clean old builds
+rm -rf dist/ build/ *.egg-info
+
+# Build source and wheel distributions
+python -m build
+```
+
+This creates:
+- `dist/daglint-X.Y.Z.tar.gz` (source distribution)
+- `dist/daglint-X.Y.Z-py3-none-any.whl` (wheel distribution)
+
+### 3. Check Package with Twine
+
+```bash
+# Verify the package metadata and files
+python -m twine check dist/*
+```
+
+### 4. Test Upload to TestPyPI (Recommended)
+
+```bash
+# Upload to TestPyPI first
+python -m twine upload --repository testpypi dist/*
+
+# Test installation from TestPyPI
+pip install --index-url https://test.pypi.org/simple/ --no-deps daglint
+```
+
+### 5. Upload to Production PyPI
+
+```bash
+# Upload to production PyPI
+python -m twine upload dist/*
+```
+
+You'll be prompted for your PyPI credentials or API token.
+
+### 6. Push Changes to GitHub
+
+```bash
+# Push the commit and tags
+git push origin main --tags
+```
+
+### Authentication Options
+
+**Option 1: API Token (Recommended)**
+
+Create a PyPI API token at https://pypi.org/manage/account/token/
+
+```bash
+# Set environment variables
+export TWINE_USERNAME=__token__
+export TWINE_PASSWORD=pypi-AgEIcHlwaS5vcmc...
+
+# Or use .pypirc file
+cat > ~/.pypirc << EOF
+[pypi]
+username = __token__
+password = pypi-AgEIcHlwaS5vcmc...
+
+[testpypi]
+username = __token__
+password = pypi-AgEIcHlwaS5vcmc...
+EOF
+chmod 600 ~/.pypirc
+```
+
+**Option 2: Username/Password**
+
+Enter credentials when prompted by twine.
 
 ## Monitoring and Maintenance
 

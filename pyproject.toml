@@ -39,14 +39,15 @@ dev = [
     "build>=0.10.0",
     "wheel>=0.38.0",
     "bumpver>=2023.1126",
+    "twine>=4.0.0",
 ]
 
 [project.scripts]
 daglint = "daglint.cli:cli"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/daglint"
-Repository = "https://github.com/yourusername/daglint"
+Homepage = "https://github.com/why-pengo/daglint"
+Repository = "https://github.com/why-pengo/daglint"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

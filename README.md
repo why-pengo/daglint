@@ -15,8 +15,16 @@ A linting tool for Apache Airflow DAG files using Python's AST (Abstract Syntax 
 
 ## Installation
 
+### From Source (Current)
+
 ```bash
 pip install -e .
+```
+
+### From PyPI (Coming Soon)
+
+```bash
+pip install daglint
 ```
 
 ## Usage
