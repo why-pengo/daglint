@@ -147,4 +147,10 @@ push = false
 "src/daglint/__init__.py" = [
     '__version__ = "{version}"',
 ]
+"PROJECT_SUMMARY.md" = [
+    '**Version:** {version}',
+]
+"DEPLOYMENT.md" = [
+    '**Version**: {version}',
+]
 

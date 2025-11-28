@@ -37,6 +37,12 @@ push = false
 "src/daglint/__init__.py" = [
     '__version__ = "{version}"',
 ]
+"PROJECT_SUMMARY.md" = [
+    '**Version:** {version}',
+]
+"DEPLOYMENT.md" = [
+    '**Version**: {version}',
+]
 ```
 
 ### Configuration Options
@@ -164,6 +170,8 @@ bumpver update --patch --push
    This will:
    - Update version in `pyproject.toml` (2 places)
    - Update version in `src/daglint/__init__.py`
+   - Update version in `PROJECT_SUMMARY.md`
+   - Update version in `DEPLOYMENT.md`
    - Create a git commit with message: "bump version 0.5.0 -> 0.6.0"
    - Create a git tag: "v0.6.0"
 
@@ -235,6 +243,12 @@ When you run bumpver, it automatically updates:
 2. **`src/daglint/__init__.py`**
    - Line: `__version__ = "X.Y.Z"`
 
+3. **`PROJECT_SUMMARY.md`**
+   - Line: `**Version:** X.Y.Z`
+
+4. **`DEPLOYMENT.md`**
+   - Line: `**Version**: X.Y.Z`
+
 ## Troubleshooting
 
 ### Error: "Command 'git fetch' returned non-zero exit status"
@@ -269,11 +283,13 @@ If bumpver fails, you can manually update these files:
 
 1. `pyproject.toml` - Update both `version` and `current_version`
 2. `src/daglint/__init__.py` - Update `__version__`
+3. `PROJECT_SUMMARY.md` - Update `**Version:**` line
+4. `DEPLOYMENT.md` - Update `**Version**:` line
 
 Then commit and tag:
 
 ```bash
-git add pyproject.toml src/daglint/__init__.py
+git add pyproject.toml src/daglint/__init__.py PROJECT_SUMMARY.md DEPLOYMENT.md
 git commit -m "bump version 0.5.0 -> 0.5.1"
 git tag v0.5.1
 ```

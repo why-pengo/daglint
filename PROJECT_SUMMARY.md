@@ -2,7 +2,9 @@
 
 ## Overview
 
-DAGLint is a comprehensive linting tool for Apache Airflow DAG files that uses Python's Abstract Syntax Tree (AST) to enforce standardization and best practices. This project was created based on the concepts described in the Medium article "Mastering Airflow DAG Standardization with Python's AST: A Deep Dive into Linting at Scale."
+DAGLint is a comprehensive linting tool for Apache Airflow DAG files that uses Python's Abstract Syntax Tree (AST) to 
+enforce standardization and best practices. This project was created based on the concepts described in the Medium 
+article "Mastering Airflow DAG Standardization with Python's AST: A Deep Dive into Linting at Scale."
 
 ## Project Structure
 
@@ -209,6 +211,6 @@ MIT License - See [LICENSE](LICENSE) file for details.
 ---
 
 **Project Status**: ✅ Fully functional and tested
-**Version**: 0.1.0
+**Version:** 0.5.0
 **Last Updated**: November 22, 2025
 
