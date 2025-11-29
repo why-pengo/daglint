@@ -91,7 +91,7 @@ For a PR to be merged, it must:
 pip install -e .
 ```
 
-### Option 2: Install from from PyPI
+### Option 2: Install from PyPI
 
 DAGLint is available on PyPI: https://pypi.org/project/daglint/
 
