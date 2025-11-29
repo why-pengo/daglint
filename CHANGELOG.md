@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2025-12-05
+
+### Fixed
+
+## 🎨 Fix Shell Colorization in dev.sh for zsh Compatibility
+
+### Summary
+Fixes shell colorization not working under zsh by replacing heredoc-based help text with `printf` statements that 
+properly interpret ANSI escape sequences across both bash and zsh.
+
+### Problem
+The `dev.sh` script's colorization was not working in zsh shells. Color codes like `\033[0;34m` were being displayed 
+as literal text instead of rendering as colors.
+
+### Changes Made
+
+#### `dev.sh`
+- **Replaced heredoc with `printf` statements** in `show_help()` function
+  - Converted help text from a single heredoc block to individual `printf` calls
+  - Each line now explicitly uses `printf` which consistently interprets escape sequences in both bash and zsh
+- **Maintained existing color scheme**:
+  - 🔵 Blue arrows (`==>`) for status messages
+  - ✅ Green checkmarks (`✓`) for success messages
+  - ❌ Red X marks (`✗`) for error messages
+  - ⚠️ Yellow exclamation marks (`!`) for warning messages
+
 ## [0.6.0] - 2025-11-29
 
 ### Added

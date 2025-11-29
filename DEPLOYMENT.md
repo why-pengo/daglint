@@ -1,16 +1,5 @@
 # DAGLint Deployment Guide
 
-## ✅ Project Status
-
-**Current State**: Fully functional and ready for use!
-
-- ✅ All 39 tests passing
-- ✅ 94% code coverage
-- ✅ Code formatted and linted
-- ✅ CI/CD pipelines configured
-- ✅ Documentation complete
-- ✅ Example DAGs included
-
 ## Local Development Setup
 
 ### Prerequisites
@@ -21,9 +10,6 @@
 ### Installation Steps
 
 1. **Clone/Navigate to the repository**
-   ```bash
-   cd /Volumes/Crucial\ X9/workspace/daglint
-   ```
 
 2. **Create virtual environment** (if not exists)
    ```bash
@@ -80,38 +66,11 @@ flake8 src/daglint
 mypy src/daglint --ignore-missing-imports
 ```
 
-## GitHub Repository Setup
-
-### 1. Initialize Git Repository
-```bash
-cd /Volumes/Crucial\ X9/workspace/daglint
-git init
-git add .
-git commit -m "Initial commit: DAGLint v0.1.0"
-```
-
-### 2. Create GitHub Repository
-1. Go to https://github.com/new
-2. Create a new repository named `daglint`
-3. Don't initialize with README (we already have one)
-
-### 3. Push to GitHub
-```bash
-git remote add origin https://github.com/YOUR_USERNAME/daglint.git
-git branch -M main
-git push -u origin main
-```
-
-### 4. Enable GitHub Actions
-- GitHub Actions will automatically run on push/PR
-- Check the "Actions" tab in your repository
-- Workflows are in `.github/workflows/`
-
 ## CI/CD Pipeline
 
 ### Automated Checks on Every PR
 The CI pipeline will automatically:
-1. Run tests on Python 3.8, 3.9, 3.10, 3.11
+1. Run tests on Python 3.9, 3.10, 3.11
 2. Check code formatting (black, isort)
 3. Run linting (flake8)
 4. Type check with mypy
@@ -129,21 +88,15 @@ For a PR to be merged, it must:
 
 ### Option 1: Install from Local Source
 ```bash
-pip install /Volumes/Crucial\ X9/workspace/daglint
+pip install -e .
 ```
 
-### Option 2: Install from GitHub (after pushing)
+### Option 2: Install from PyPI
+
+DAGLint is available on PyPI: https://pypi.org/project/daglint/
+
 ```bash
-pip install git+https://github.com/YOUR_USERNAME/daglint.git
-```
-
-### Option 3: Add to requirements.txt
-```
-# After publishing to PyPI
-daglint>=0.1.0
-
-# Or from GitHub
-git+https://github.com/YOUR_USERNAME/daglint.git@main
+pip install daglint
 ```
 
 ## Integration with Airflow Projects
@@ -328,26 +281,6 @@ pip install -e .
 - Run tests locally first
 - Ensure all dependencies are in requirements.txt
 
-## Project Metrics
-
-- **Lines of Code**: ~1,200
-- **Test Files**: 4
-- **Test Cases**: 39
-- **Code Coverage**: 94%
-- **Python Versions**: 3.8, 3.9, 3.10, 3.11
-- **Dependencies**: 3 (click, pyyaml, colorama)
-- **Dev Dependencies**: 6 (pytest, pytest-cov, black, flake8, mypy, isort)
-
-## Next Steps
-
-1. ✅ **Project is ready to use!**
-2. Push to GitHub repository
-3. Set up branch protection rules
-4. Start using in your Airflow projects
-5. Gather feedback and iterate
-6. Add more rules as needed
-7. Consider publishing to PyPI
-
 ## Support
 
 For issues or questions:
@@ -359,6 +292,6 @@ For issues or questions:
 ---
 
 **Status**: ✅ Ready for production use
-**Version**: 0.6.0
+**Version**: 0.6.1
 **Last Updated**: November 28, 2025
 
