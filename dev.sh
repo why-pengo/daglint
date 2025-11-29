@@ -14,49 +14,43 @@ NC='\033[0m' # No Color
 
 # Function to print colored output
 print_status() {
-    echo -e "${BLUE}==>${NC} $1"
+    printf "${BLUE}==>${NC} %s\n" "$1"
 }
 
 print_success() {
-    echo -e "${GREEN}✓${NC} $1"
+    printf "${GREEN}✓${NC} %s\n" "$1"
 }
 
 print_error() {
-    echo -e "${RED}✗${NC} $1"
+    printf "${RED}✗${NC} %s\n" "$1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}!${NC} $1"
+    printf "${YELLOW}!${NC} %s\n" "$1"
 }
 
 # Help command
 show_help() {
-    cat << EOF
-${BLUE}DAGLint Development Script${NC}
-
-${GREEN}Usage:${NC}
-    ./dev.sh [command]
-
-${GREEN}Available commands:${NC}
-    help          Show this help message
-    install       Install package
-    install-dev   Install package with dev dependencies
-    test          Run tests
-    test-cov      Run tests with coverage
-    lint          Run linting checks
-    format        Format code with black and isort
-    clean         Clean build artifacts
-    build         Build package
-    check         Run all quality checks (lint + test)
-    all           Install dev deps, format, lint, and test
-
-${GREEN}Examples:${NC}
-    ./dev.sh install-dev    # Install with dev dependencies
-    ./dev.sh test           # Run tests
-    ./dev.sh format         # Format code
-    ./dev.sh check          # Run all checks
-
-EOF
+    printf "${BLUE}DAGLint Development Script${NC}\n\n"
+    printf "${GREEN}Usage:${NC}\n"
+    printf "    ./dev.sh [command]\n\n"
+    printf "${GREEN}Available commands:${NC}\n"
+    printf "    help          Show this help message\n"
+    printf "    install       Install package\n"
+    printf "    install-dev   Install package with dev dependencies\n"
+    printf "    test          Run tests\n"
+    printf "    test-cov      Run tests with coverage\n"
+    printf "    lint          Run linting checks\n"
+    printf "    format        Format code with black and isort\n"
+    printf "    clean         Clean build artifacts\n"
+    printf "    build         Build package\n"
+    printf "    check         Run all quality checks (lint + test)\n"
+    printf "    all           Install dev deps, format, lint, and test\n\n"
+    printf "${GREEN}Examples:${NC}\n"
+    printf "    ./dev.sh install-dev    # Install with dev dependencies\n"
+    printf "    ./dev.sh test           # Run tests\n"
+    printf "    ./dev.sh format         # Format code\n"
+    printf "    ./dev.sh check          # Run all checks\n\n"
 }
 
 # Install command
