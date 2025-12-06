@@ -87,4 +87,3 @@ other_args = {
         issues = rule.check(tree, "test.py", code)
         assert len(issues) == 1
         assert "Invalid owner 'invalid-team'" in issues[0].message
-

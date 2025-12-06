@@ -97,4 +97,3 @@ dag2 = DAG('dag2', tags=['environment'])
         issues = rule.check(tree, "test.py", code)
         assert len(issues) == 1
         assert "Missing required tags" in issues[0].message
-

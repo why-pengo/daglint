@@ -49,4 +49,3 @@ class RequiredDAGParamsRule(BaseRule):
             if isinstance(key, ast.Constant) and isinstance(key.value, str):
                 keys.append(key.value)
         return keys
-

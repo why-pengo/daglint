@@ -53,4 +53,3 @@ class TagRequirementsRule(BaseRule):
                             tags.append(elt.value)
                     return tags
         return []
-

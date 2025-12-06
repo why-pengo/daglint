@@ -152,6 +152,3 @@ default_args = {
         issues = rule.check(tree, "test.py", code)
         assert len(issues) == 1
         assert "start_date" in issues[0].message
-
-
-

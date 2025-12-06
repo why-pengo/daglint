@@ -65,4 +65,3 @@ class OwnerValidationRule(BaseRule):
                 if isinstance(value, ast.Constant):
                     return value.value
         return None
-

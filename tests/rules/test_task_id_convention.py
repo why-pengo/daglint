@@ -36,10 +36,9 @@ task = PythonOperator(task_id='MyInvalidTask')
     def test_rule_has_metadata(self):
         """Test that rule has required metadata."""
         rule = TaskIDConventionRule()
-        assert hasattr(rule, 'rule_id')
-        assert hasattr(rule, 'description')
+        assert hasattr(rule, "rule_id")
+        assert hasattr(rule, "description")
         assert rule.rule_id is not None
         assert rule.description is not None
         assert len(rule.rule_id) > 0
         assert len(rule.description) > 0
-
