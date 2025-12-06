@@ -40,6 +40,8 @@ dev = [
     "wheel>=0.38.0",
     "bumpver>=2023.1126",
     "twine>=4.0.0",
+    "types-PyYAML>=5.4.0",
+    "pip-tools>=7.5.2",
 ]
 
 [project.scripts]

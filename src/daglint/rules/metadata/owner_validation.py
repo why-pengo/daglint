@@ -63,5 +63,6 @@ class OwnerValidationRule(BaseRule):
         for key, value in zip(node.keys, node.values):
             if isinstance(key, ast.Constant) and key.value == "owner":
                 if isinstance(value, ast.Constant):
-                    return value.value
+                    if isinstance(value.value, str):
+                        return value.value
         return None

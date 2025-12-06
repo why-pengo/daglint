@@ -1,5 +1,7 @@
 """Linting rules for DAG files."""
 
+from typing import Dict, Type
+
 from daglint.rules.base import BaseRule
 from daglint.rules.configuration import (
     CatchupValidationRule,
@@ -15,7 +17,7 @@ from daglint.rules.naming import DAGIDConventionRule, TaskIDConventionRule
 from daglint.rules.validation import NoDuplicateTaskIDsRule
 
 # Registry of all available rules
-AVAILABLE_RULES = {
+AVAILABLE_RULES: Dict[str, Type[BaseRule]] = {
     "dag_id_convention": DAGIDConventionRule,
     "owner_validation": OwnerValidationRule,
     "task_id_convention": TaskIDConventionRule,
@@ -28,7 +30,6 @@ AVAILABLE_RULES = {
 }
 
 __all__ = [
-    "BaseRule",
     "DAGIDConventionRule",
     "OwnerValidationRule",
     "TaskIDConventionRule",
