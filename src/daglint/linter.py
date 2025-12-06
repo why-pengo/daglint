@@ -1,6 +1,7 @@
 """Core linting functionality."""
 
 import ast
+import inspect
 from pathlib import Path
 from typing import List
 
@@ -31,6 +32,8 @@ class DAGLinter:
         """
         enabled_rules = []
         for rule_id, rule_class in AVAILABLE_RULES.items():
+            if inspect.isabstract(rule_class):
+                continue  # Skip abstract base classes
             if self.config.is_rule_enabled(rule_id):
                 rule_config = self.config.get_rule_config(rule_id)
                 rule_instance = rule_class(rule_config)

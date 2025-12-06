@@ -20,7 +20,7 @@ class NoDuplicateTaskIDsRule(BaseRule):
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
-        task_ids = {}
+        task_ids: dict[str, int] = {}
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Call):

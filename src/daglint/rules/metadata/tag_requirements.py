@@ -19,7 +19,7 @@ class TagRequirementsRule(BaseRule):
         return "DAGs must include all required tags"
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
-        issues = []
+        issues: list[LintIssue] = []
         required_tags = self.config.get("required_tags", [])
 
         if not required_tags:
@@ -49,7 +49,7 @@ class TagRequirementsRule(BaseRule):
                 if isinstance(keyword.value, ast.List):
                     tags = []
                     for elt in keyword.value.elts:
-                        if isinstance(elt, ast.Constant):
+                        if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
                             tags.append(elt.value)
                     return tags
         return []

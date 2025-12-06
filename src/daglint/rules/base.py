@@ -72,7 +72,9 @@ class BaseRule(ABC):
         for keyword in node.keywords:
             if keyword.arg == "task_id":
                 if isinstance(keyword.value, ast.Constant):
-                    return keyword.value.value
+                    value = keyword.value.value
+                    if isinstance(value, str):
+                        return value
         return None
 
     def _extract_dag_id(self, node: ast.Call) -> Optional[str]:
@@ -86,13 +88,17 @@ class BaseRule(ABC):
         """
         # Check positional arguments
         if node.args and isinstance(node.args[0], ast.Constant):
-            return node.args[0].value
+            value = node.args[0].value
+            if isinstance(value, str):
+                return value
 
         # Check keyword arguments
         for keyword in node.keywords:
             if keyword.arg == "dag_id":
                 if isinstance(keyword.value, ast.Constant):
-                    return keyword.value.value
+                    value = keyword.value.value
+                    if isinstance(value, str):
+                        return value
 
         return None
 

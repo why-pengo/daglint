@@ -98,7 +98,7 @@ class Config:
         Returns:
             Rule configuration dictionary
         """
-        return self.rules_config.get(rule_id, {})
+        return dict(self.rules_config.get(rule_id, {}))
 
     def is_rule_enabled(self, rule_id: str) -> bool:
         """Check if a rule is enabled.
@@ -110,7 +110,7 @@ class Config:
             True if rule is enabled
         """
         rule_config = self.get_rule_config(rule_id)
-        return rule_config.get("enabled", True)
+        return bool(rule_config.get("enabled", True))
 
     def set_active_rules(self, rule_ids: List[str]) -> None:
         """Enable only specified rules.

@@ -93,7 +93,9 @@ class CatchupValidationRule(BaseRule):
         for keyword in node.keywords:
             if keyword.arg == "catchup":
                 if isinstance(keyword.value, ast.Constant):
-                    return keyword.value.value
+                    value = keyword.value.value
+                    if isinstance(value, bool):
+                        return value
         return None
 
 

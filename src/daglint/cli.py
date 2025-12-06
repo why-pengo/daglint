@@ -123,9 +123,9 @@ def rules():
         click.echo()
 
 
-@cli.command()
+@cli.command(name="init")
 @click.option("--output", "-o", default=".daglint.yaml", help="Output configuration file path")
-def init(output: str):
+def init_cmd(output: str):
     """Generate a default configuration file."""
     config_path = Path(output)
 

@@ -107,7 +107,7 @@ rules:
 ## CI/CD Integration
 
 The project includes GitHub Actions workflows that:
-- Run tests on Python 3.9, 3.10, 3.11
+- Run tests on Python 3.10, 3.11, 3.12
 - Check code quality (black, flake8, isort, mypy)
 - Generate coverage reports
 - Validate pull requests
