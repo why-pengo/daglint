@@ -9,16 +9,16 @@ description = "A linting tool for Apache Airflow DAG files"
 readme = "README.md"
 authors = [{name = "Jon Morgan", email = "morgan.jon@gmail.com"}]
 license = {file = "LICENSE" }
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Quality Assurance",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 keywords = ["airflow", "dag", "lint", "linting", "static analysis", "code quality"]
 dependencies = [
@@ -59,7 +59,7 @@ where = ["src"]
 
 [tool.black]
 line-length = 127
-target-version = ['py38', 'py39', 'py310', 'py311']
+target-version = ['py310', 'py311', 'py312']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -118,7 +118,7 @@ exclude_lines = [
 ]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false

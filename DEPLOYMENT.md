@@ -3,7 +3,7 @@
 ## Local Development Setup
 
 ### Prerequisites
-- Python 3.8 or higher
+- Python 3.10 or higher
 - pip
 - Git
 
@@ -70,7 +70,7 @@ mypy src/daglint --ignore-missing-imports
 
 ### Automated Checks on Every PR
 The CI pipeline will automatically:
-1. Run tests on Python 3.9, 3.10, 3.11
+1. Run tests on Python 3.10, 3.11, 3.12
 2. Check code formatting (black, isort)
 3. Run linting (flake8)
 4. Type check with mypy
