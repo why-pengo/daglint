@@ -18,19 +18,19 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 3. Install in development mode:
 ```bash
-./dev.sh install-dev
+make install-dev
 ```
 
 ## Running Tests
 
 Run all tests:
 ```bash
-./dev.sh test
+make test
 ```
 
 Run with coverage:
 ```bash
-./dev.sh test-cov
+make test-cov
 ```
 
 ## Code Quality
@@ -39,14 +39,14 @@ Before submitting a PR, ensure your code passes all quality checks:
 
 ```bash
 # Format code
-./dev.sh format
+make format
 
 # Run all checks (lint + test)
-./dev.sh check
+make check
 
 # Or run individually:
-./dev.sh lint
-./dev.sh test
+make lint
+make test
 ```
 
 Alternative using direct commands:
@@ -108,4 +108,3 @@ To add a new linting rule:
 ## Code of Conduct
 
 Be respectful and constructive in all interactions.
-

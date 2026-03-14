@@ -33,35 +33,35 @@ daglint init
 
 ```bash
 # Run all tests
-./dev.sh test
+make test
 
 # Run with coverage
-./dev.sh test-cov
+make test-cov
 ```
 
 ## Development Commands
 
 ```bash
 # Install dev dependencies
-./dev.sh install-dev
+make install-dev
 
 # Format code
-./dev.sh format
+make format
 
 # Run linting
-./dev.sh lint
+make lint
 
 # Clean build artifacts
-./dev.sh clean
+make clean
 
 # Build package
-./dev.sh build
+make build
 
 # Run all checks (lint + test)
-./dev.sh check
+make check
 
 # See all available commands
-./dev.sh help
+make help
 ```
 
 ## Example Output
@@ -134,4 +134,3 @@ Workflows are located in `.github/workflows/`
 - See `PROJECT_SUMMARY.md` for architecture details
 - Read `CONTRIBUTING.md` for development guidelines
 - View examples in `examples/` directory
-

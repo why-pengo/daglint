@@ -88,25 +88,25 @@ rules:
 
 ```bash
 # Install development dependencies
-./dev.sh install-dev
+make install-dev
 
 # Run tests
-./dev.sh test
+make test
 
 # Run tests with coverage
-./dev.sh test-cov
+make test-cov
 
 # Format code
-./dev.sh format
+make format
 
 # Run linting checks
-./dev.sh lint
+make lint
 
 # Run all quality checks
-./dev.sh check
+make check
 
 # See all available commands
-./dev.sh help
+make help
 ```
 
 ### Version Management
@@ -130,4 +130,3 @@ bumpver update --major --no-fetch
 ## License
 
 MIT
-

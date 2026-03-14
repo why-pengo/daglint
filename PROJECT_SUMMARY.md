@@ -43,7 +43,7 @@ daglint/
 ├── CHANGELOG.md                # Version history
 ├── CONTRIBUTING.md             # Contribution guidelines
 ├── LICENSE                     # MIT License
-├── dev.sh                      # Development script (replaces Makefile)
+├── Makefile                    # Development task runner
 ├── README.md                   # Main documentation
 ├── pyproject.toml              # Project configuration
 ├── requirements-dev.txt        # Development dependencies
@@ -213,4 +213,3 @@ MIT License - See [LICENSE](LICENSE) file for details.
 **Project Status**: ✅ Fully functional and tested
 **Version:** 0.6.2
 **Last Updated**: November 22, 2025
-
