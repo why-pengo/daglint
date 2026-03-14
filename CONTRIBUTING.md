@@ -91,13 +91,14 @@ To add a new linting rule:
 1. Choose the appropriate module in `src/daglint/rules/` based on your rule category:
    - `naming.py`: Naming convention rules
    - `configuration.py`: Configuration validation rules
-   - `metadata.py`: Metadata and documentation rules
+   - `metadata/`: Metadata rules
    - `validation.py`: Structural validation rules
 2. Create a new rule class that inherits from `BaseRule`
 3. Implement the required methods (`rule_id`, `description`, `check`)
 4. Export the rule in `src/daglint/rules/__init__.py` and add to `AVAILABLE_RULES`
-5. Write tests in `tests/test_rules.py`
-6. Update documentation
+5. Add default configuration in `src/daglint/config.py` and `.daglint.example.yaml`
+6. Write tests in `tests/rules/test_<rule_id>.py`
+7. Update documentation
 
 ## Reporting Issues
 

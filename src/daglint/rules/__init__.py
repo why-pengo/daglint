@@ -9,6 +9,7 @@ from daglint.rules.configuration import (
     ScheduleValidationRule,
 )
 from daglint.rules.metadata import (
+    MaxActiveRunsValidationRule,
     OwnerValidationRule,
     RequiredDAGParamsRule,
     TagRequirementsRule,
@@ -25,6 +26,7 @@ AVAILABLE_RULES: Dict[str, Type[BaseRule]] = {
     "tag_requirements": TagRequirementsRule,
     "no_duplicate_task_ids": NoDuplicateTaskIDsRule,
     "required_dag_params": RequiredDAGParamsRule,
+    "max_active_runs_validation": MaxActiveRunsValidationRule,
     "catchup_validation": CatchupValidationRule,
     "schedule_validation": ScheduleValidationRule,
 }
@@ -37,6 +39,7 @@ __all__ = [
     "TagRequirementsRule",
     "NoDuplicateTaskIDsRule",
     "RequiredDAGParamsRule",
+    "MaxActiveRunsValidationRule",
     "CatchupValidationRule",
     "ScheduleValidationRule",
     "AVAILABLE_RULES",

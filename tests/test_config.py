@@ -13,6 +13,7 @@ def test_default_config():
     config = Config.default()
     assert config.is_rule_enabled("dag_id_convention")
     assert config.is_rule_enabled("owner_validation")
+    assert config.is_rule_enabled("max_active_runs_validation")
 
 
 def test_config_from_file():
@@ -45,6 +46,9 @@ def test_get_rule_config():
     assert "pattern" in rule_config
     assert "enabled" in rule_config
 
+    max_active_runs_config = config.get_rule_config("max_active_runs_validation")
+    assert max_active_runs_config["max_active_runs"] == 1
+
 
 def test_set_active_rules():
     """Test setting active rules."""
@@ -65,3 +69,5 @@ def test_generate_default_config():
         assert config_path.exists()
         config = Config.from_file(str(config_path))
         assert config.is_rule_enabled("dag_id_convention")
+        assert config.is_rule_enabled("max_active_runs_validation")
+        assert config.get_rule_config("max_active_runs_validation")["max_active_runs"] == 1

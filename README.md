@@ -9,6 +9,7 @@ A linting tool for Apache Airflow DAG files using Python's AST (Abstract Syntax 
 - **Task ID Convention**: Validates task IDs follow naming patterns
 - **Retry Configuration**: Ensures retry settings are properly configured
 - **Tag Requirements**: Validates required tags are present
+- **Max Active Runs Validation**: Ensures DAGs explicitly set `max_active_runs` to the configured value
 - **Import Validation**: Checks for prohibited or required imports
 - **Schedule Validation**: Ensures schedule_interval is properly set
 - **Documentation Checks**: Validates DAG and task documentation
@@ -78,6 +79,11 @@ rules:
     required_tags:
       - "environment"
       - "team"
+
+  max_active_runs_validation:
+    enabled: true
+    max_active_runs: 1
+    severity: warning
   
   schedule_validation:
     enabled: true

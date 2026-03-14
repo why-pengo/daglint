@@ -26,6 +26,7 @@ with DAG(
     dag_id='my_valid_dag',
     default_args=default_args,
     schedule_interval='@daily',
+    max_active_runs=1,
     catchup=False,
     tags=['environment', 'team'],
 ) as dag:
@@ -145,3 +146,41 @@ dag = DAG('test_my_dag')
         # Should pass with custom pattern
         dag_id_issues = [i for i in issues if i.rule_id == "dag_id_convention"]
         assert len(dag_id_issues) == 0
+
+
+def test_linter_with_custom_max_active_runs_config():
+    """Test linter with configurable max_active_runs loaded from YAML."""
+    code = """
+from airflow import DAG
+
+dag = DAG(
+    'my_dag',
+    max_active_runs=2,
+)
+"""
+
+    config_content = """
+rules:
+  max_active_runs_validation:
+    enabled: true
+    max_active_runs: 2
+    severity: warning
+"""
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as dag_file:
+        dag_file.write(code)
+        dag_file.flush()
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as config_file:
+            config_file.write(config_content)
+            config_file.flush()
+
+            config = Config.from_file(config_file.name)
+            linter = DAGLinter(config)
+            issues = linter.lint_file(dag_file.name)
+
+        Path(config_file.name).unlink()
+        Path(dag_file.name).unlink()
+
+    max_active_runs_issues = [i for i in issues if i.rule_id == "max_active_runs_validation"]
+    assert len(max_active_runs_issues) == 0

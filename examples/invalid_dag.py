@@ -21,6 +21,7 @@ with DAG(
     default_args=default_args,
     description='An invalid DAG with multiple issues',
     # Missing schedule_interval
+    # Missing max_active_runs
     # Missing catchup
     # Missing tags
 ) as dag:
@@ -36,4 +37,3 @@ with DAG(
         task_id='InvalidTaskID',  # Duplicate!
         python_callable=my_task,
     )
-

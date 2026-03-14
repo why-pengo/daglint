@@ -34,6 +34,7 @@ with DAG(
     description='A valid example DAG that passes all daglint checks',
     schedule_interval='@daily',
     start_date=datetime(2023, 1, 1),
+    max_active_runs=1,
     catchup=False,
     tags=['environment', 'team', 'example'],
 ) as dag:
@@ -55,4 +56,3 @@ with DAG(
 
     # Set task dependencies
     task_hello >> [task_date, task_bash]
-

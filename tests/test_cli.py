@@ -32,6 +32,7 @@ with DAG(
     dag_id='my_valid_dag',
     default_args=default_args,
     schedule_interval='@daily',
+    max_active_runs=1,
     catchup=False,
     tags=['environment', 'team'],
 ) as dag:
@@ -129,6 +130,7 @@ def test_rules_command():
     result = runner.invoke(cli, ["rules"])
     assert result.exit_code == 0
     assert "dag_id_convention" in result.output
+    assert "max_active_runs_validation" in result.output
     assert "owner_validation" in result.output
 
 
