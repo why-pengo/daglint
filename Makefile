@@ -13,11 +13,11 @@ define print_status
 endef
 
 define print_success
-	printf "$(GREEN)\342\234\223$(NC) %s\n" "$(1)"
+	printf "$(GREEN)✓$(NC) %s\n" "$(1)"
 endef
 
 define print_error
-	printf "$(RED)\342\234\227$(NC) %s\n" "$(1)"
+	printf "$(RED)✗$(NC) %s\n" "$(1)"
 endef
 
 define print_warning
@@ -115,7 +115,7 @@ check:
 	@$(MAKE) format
 	@$(MAKE) lint
 	@$(MAKE) test
-	@$(call print_success,All checks passed! \360\237\216\211)
+	@$(call print_success,All checks passed! 🎉)
 
 all: install-dev format lint test
-	@$(call print_success,Complete development setup finished! \360\237\232\200)
+	@$(call print_success,Complete development setup finished! 🚀)

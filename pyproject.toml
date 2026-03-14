@@ -8,7 +8,8 @@ version = "0.6.2"
 description = "A linting tool for Apache Airflow DAG files"
 readme = "README.md"
 authors = [{name = "Jon Morgan", email = "morgan.jon@gmail.com"}]
-license = {file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 classifiers = [
     "License :: OSI Approved :: MIT License",
