@@ -112,6 +112,7 @@ build: clean
 
 check:
 	@$(call print_status,Running all quality checks...)
+	@$(MAKE) format
 	@$(MAKE) lint
 	@$(MAKE) test
 	@$(call print_success,All checks passed! \360\237\216\211)

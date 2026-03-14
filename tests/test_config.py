@@ -18,16 +18,14 @@ def test_default_config():
 def test_config_from_file():
     """Test loading configuration from file."""
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-        f.write(
-            """
+        f.write("""
 rules:
   dag_id_convention:
     enabled: true
     pattern: "^test_.*$"
   owner_validation:
     enabled: false
-"""
-        )
+""")
         f.flush()
 
         config = Config.from_file(f.name)
