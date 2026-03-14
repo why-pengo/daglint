@@ -292,6 +292,6 @@ For issues or questions:
 ---
 
 **Status**: ✅ Ready for production use
-**Version**: 0.6.2
+**Version**: 1.0.0
 **Last Updated**: November 28, 2025
 
