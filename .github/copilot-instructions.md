@@ -6,12 +6,12 @@
 
 ```bash
 # Install with dev dependencies
-./dev.sh install-dev
+make install-dev
 # or: pip install -e ".[dev]"
 
 # Run all tests
 pytest
-# or: ./dev.sh test
+# or: make test
 
 # Run a single test file
 pytest tests/rules/test_dag_id_convention.py -v
@@ -20,13 +20,13 @@ pytest tests/rules/test_dag_id_convention.py -v
 pytest tests/rules/test_dag_id_convention.py::TestDAGIDConventionRule::test_invalid_dag_id -v
 
 # Format code (black + isort)
-./dev.sh format
+make format
 
 # Lint (flake8 + black check + isort check + mypy)
-./dev.sh lint
+make lint
 
 # Run all checks (lint + test)
-./dev.sh check
+make check
 ```
 
 Line length is **127** (configured in `pyproject.toml` and `.flake8`).
