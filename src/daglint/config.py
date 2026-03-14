@@ -62,6 +62,11 @@ class Config:
                     "required_params": ["owner", "start_date", "retries"],
                     "severity": "error",
                 },
+                "max_active_runs_validation": {
+                    "enabled": True,
+                    "max_active_runs": 1,
+                    "severity": "warning",
+                },
                 "catchup_validation": {
                     "enabled": True,
                     "default_catchup": False,

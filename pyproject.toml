@@ -8,10 +8,10 @@ version = "0.6.2"
 description = "A linting tool for Apache Airflow DAG files"
 readme = "README.md"
 authors = [{name = "Jon Morgan", email = "morgan.jon@gmail.com"}]
-license = {file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 classifiers = [
-    "License :: OSI Approved :: MIT License",
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Quality Assurance",
@@ -31,7 +31,7 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=3.0.0",
-    "black>=22.0.0",
+    "black>=26.3.1",
     "flake8>=4.0.0",
     "mypy>=0.950",
     "isort>=5.10.0",
@@ -156,4 +156,3 @@ push = false
 "DEPLOYMENT.md" = [
     '**Version**: {version}',
 ]
-

@@ -47,8 +47,12 @@ rules:
       - retries
     severity: error
 
+  max_active_runs_validation:
+    enabled: true
+    max_active_runs: 1
+    severity: warning
+
   catchup_validation:
     enabled: true
     default_catchup: false
     severity: warning
-

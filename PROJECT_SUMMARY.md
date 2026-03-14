@@ -26,14 +26,14 @@ daglint/
 │           ├── base.py         # BaseRule abstract class
 │           ├── naming.py       # Naming convention rules
 │           ├── configuration.py # Configuration validation rules
-│           ├── metadata.py     # Metadata and documentation rules
+│           ├── metadata/       # Metadata validation rules
 │           └── validation.py   # Structural validation rules
 ├── tests/
 │   ├── __init__.py
 │   ├── test_cli.py             # CLI tests
 │   ├── test_config.py          # Configuration tests
 │   ├── test_linter.py          # Linter tests
-│   └── test_rules.py           # Rules tests (21 tests total)
+│   └── rules/                  # Rule-specific pytest coverage
 ├── examples/
 │   ├── valid_dag.py            # Example of a compliant DAG
 │   └── invalid_dag.py          # Example with multiple violations
@@ -43,7 +43,7 @@ daglint/
 ├── CHANGELOG.md                # Version history
 ├── CONTRIBUTING.md             # Contribution guidelines
 ├── LICENSE                     # MIT License
-├── dev.sh                      # Development script (replaces Makefile)
+├── Makefile                    # Development task runner
 ├── README.md                   # Main documentation
 ├── pyproject.toml              # Project configuration
 ├── requirements-dev.txt        # Development dependencies
@@ -53,7 +53,7 @@ daglint/
 
 ## Features
 
-### 9 Built-in Linting Rules
+### 10 Built-in Linting Rules
 
 1. **dag_id_convention**: Enforces snake_case naming for DAG IDs
 2. **owner_validation**: Validates DAG owners against approved list
@@ -62,8 +62,9 @@ daglint/
 5. **tag_requirements**: Validates required tags are present
 6. **no_duplicate_task_ids**: Prevents duplicate task IDs within a DAG
 7. **required_dag_params**: Ensures required parameters (owner, start_date, retries) are set
-8. **catchup_validation**: Checks that catchup parameter is explicitly set
-9. **schedule_validation**: Validates schedule_interval is properly configured
+8. **max_active_runs_validation**: Ensures DAGs explicitly set `max_active_runs` to the configured value
+9. **catchup_validation**: Checks that catchup parameter is explicitly set
+10. **schedule_validation**: Validates schedule_interval is properly configured
 
 ### CLI Commands
 
@@ -87,8 +88,8 @@ Uses YAML-based configuration (`.daglint.yaml`) with per-rule settings:
 
 ### Code Quality
 
-- **Test Coverage**: 94% code coverage
-- **39 Unit Tests**: Comprehensive test suite
+- **Test Coverage**: 96% code coverage
+- **72 Unit Tests**: Comprehensive test suite
 - **Code Formatting**: Black (line length: 127)
 - **Import Sorting**: isort
 - **Linting**: flake8
@@ -148,15 +149,15 @@ daglint rules
 
 ## Test Results
 
-All 39 tests passed successfully:
+All 72 tests passed successfully:
 - 9 CLI tests
 - 5 Configuration tests
-- 5 Linter tests
-- 20 Rule tests (covering all 9 rules)
+- 6 Linter tests
+- 52 Rule tests (covering all 10 rules)
 
 ```
-============ 39 passed in 0.38s ============
-Coverage: 94%
+============ 72 passed ============
+Coverage: 96%
 ```
 
 ## Key Technologies
@@ -213,4 +214,3 @@ MIT License - See [LICENSE](LICENSE) file for details.
 **Project Status**: ✅ Fully functional and tested
 **Version:** 0.6.2
 **Last Updated**: November 22, 2025
-

@@ -13,21 +13,20 @@ def test_default_config():
     config = Config.default()
     assert config.is_rule_enabled("dag_id_convention")
     assert config.is_rule_enabled("owner_validation")
+    assert config.is_rule_enabled("max_active_runs_validation")
 
 
 def test_config_from_file():
     """Test loading configuration from file."""
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-        f.write(
-            """
+        f.write("""
 rules:
   dag_id_convention:
     enabled: true
     pattern: "^test_.*$"
   owner_validation:
     enabled: false
-"""
-        )
+""")
         f.flush()
 
         config = Config.from_file(f.name)
@@ -46,6 +45,9 @@ def test_get_rule_config():
     rule_config = config.get_rule_config("dag_id_convention")
     assert "pattern" in rule_config
     assert "enabled" in rule_config
+
+    max_active_runs_config = config.get_rule_config("max_active_runs_validation")
+    assert max_active_runs_config["max_active_runs"] == 1
 
 
 def test_set_active_rules():
@@ -67,3 +69,5 @@ def test_generate_default_config():
         assert config_path.exists()
         config = Config.from_file(str(config_path))
         assert config.is_rule_enabled("dag_id_convention")
+        assert config.is_rule_enabled("max_active_runs_validation")
+        assert config.get_rule_config("max_active_runs_validation")["max_active_runs"] == 1
