@@ -1,70 +1,6 @@
 # DAGLint Deployment Guide
 
-## Local Development Setup
-
-### Prerequisites
-- Python 3.10 or higher
-- pip
-- Git
-
-### Installation Steps
-
-1. **Clone/Navigate to the repository**
-
-2. **Create virtual environment** (if not exists)
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-
-3. **Install the package**
-   ```bash
-   pip install -e .
-   ```
-
-4. **Install development dependencies**
-   ```bash
-   pip install -r requirements-dev.txt
-   ```
-
-5. **Verify installation**
-   ```bash
-   daglint --version
-   daglint rules
-   ```
-
-## Testing the Installation
-
-### Run Tests
-```bash
-pytest tests/ -v --cov=daglint
-```
-
-### Test CLI Commands
-```bash
-# List rules
-daglint rules
-
-# Check example DAGs
-daglint check examples/valid_dag.py
-daglint check examples/invalid_dag.py
-
-# Generate config
-daglint init --output test-config.yaml
-```
-
-### Run Code Quality Checks
-```bash
-# Format code
-black src/daglint tests
-isort src/daglint tests
-
-# Lint
-flake8 src/daglint
-
-# Type check (optional - some warnings expected)
-mypy src/daglint --ignore-missing-imports
-```
+For installation and development setup, see [README.md](README.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## CI/CD Pipeline
 
@@ -167,7 +103,6 @@ bumpver update --minor --no-fetch
 This automatically updates:
 - `pyproject.toml` (2 locations)
 - `src/daglint/__init__.py`
-- `PROJECT_SUMMARY.md`
 - `DEPLOYMENT.md`
 
 ### 2. Build Distribution Packages
@@ -288,10 +223,9 @@ pip install -e .
 ## Support
 
 For issues or questions:
-- Check documentation in `README.md`
-- Review `CONTRIBUTING.md` for development
-- See `PROJECT_SUMMARY.md` for architecture
-- Use `QUICKSTART.md` for quick reference
+- Check [README.md](README.md) for usage and configuration
+- Review [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines
+- See [VERSION_MANAGEMENT.md](VERSION_MANAGEMENT.md) for versioning details
 
 ---
 
