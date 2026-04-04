@@ -35,6 +35,7 @@ with DAG(
     max_active_runs=1,
     catchup=False,
     tags=['environment', 'team'],
+    doc_md='A valid DAG for testing.',
 ) as dag:
     
     task1 = PythonOperator(

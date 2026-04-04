@@ -84,6 +84,16 @@ Config is loaded from `.daglint.yaml` in the working directory, or falls back to
    issues = rule.check(tree, "test.py", code)
    ```
 
+## Git Workflow
+
+- All work must be done on a branch named after the GitHub issue (e.g., `issue-42`).
+- Always start from a fresh pull of the `develop` branch:
+  ```bash
+  git checkout develop && git pull origin develop
+  git checkout -b issue-<number>
+  ```
+- Pull requests must target the `develop` branch (not `main`).
+
 ## Key Conventions
 
 - Rules are detected as abstract if `inspect.isabstract()` returns `True` — `BaseRule` is skipped automatically.

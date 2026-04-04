@@ -5,14 +5,17 @@ This package contains rules for validating DAG metadata such as:
 - Tag requirements
 - Required DAG parameters
 - max_active_runs defaults
+- doc_md documentation
 """
 
+from daglint.rules.metadata.doc_md_validation import DocMdValidationRule
 from daglint.rules.metadata.max_active_runs_validation import MaxActiveRunsValidationRule
 from daglint.rules.metadata.owner_validation import OwnerValidationRule
 from daglint.rules.metadata.required_dag_params import RequiredDAGParamsRule
 from daglint.rules.metadata.tag_requirements import TagRequirementsRule
 
 __all__ = [
+    "DocMdValidationRule",
     "MaxActiveRunsValidationRule",
     "OwnerValidationRule",
     "TagRequirementsRule",
