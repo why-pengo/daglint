@@ -72,6 +72,10 @@ class Config:
                     "default_catchup": False,
                     "severity": "warning",
                 },
+                "doc_md_validation": {
+                    "enabled": True,
+                    "severity": "warning",
+                },
             }
         }
 

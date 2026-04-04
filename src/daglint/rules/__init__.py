@@ -9,6 +9,7 @@ from daglint.rules.configuration import (
     ScheduleValidationRule,
 )
 from daglint.rules.metadata import (
+    DocMdValidationRule,
     MaxActiveRunsValidationRule,
     OwnerValidationRule,
     RequiredDAGParamsRule,
@@ -20,6 +21,7 @@ from daglint.rules.validation import NoDuplicateTaskIDsRule
 # Registry of all available rules
 AVAILABLE_RULES: Dict[str, Type[BaseRule]] = {
     "dag_id_convention": DAGIDConventionRule,
+    "doc_md_validation": DocMdValidationRule,
     "owner_validation": OwnerValidationRule,
     "task_id_convention": TaskIDConventionRule,
     "retry_configuration": RetryConfigurationRule,
@@ -33,6 +35,7 @@ AVAILABLE_RULES: Dict[str, Type[BaseRule]] = {
 
 __all__ = [
     "DAGIDConventionRule",
+    "DocMdValidationRule",
     "OwnerValidationRule",
     "TaskIDConventionRule",
     "RetryConfigurationRule",
