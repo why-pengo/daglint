@@ -65,16 +65,40 @@ mypy src/daglint
 pytest
 ```
 
+## Git Workflow
+
+The branching model is: `issue-<number>` → `develop` → `main` (releases only).
+
+### Feature work
+- All work must be done on a branch named after the GitHub issue (e.g., `issue-42`).
+- Always start from a fresh pull of the `develop` branch:
+  ```bash
+  git checkout develop && git pull origin develop
+  git checkout -b issue-<number>
+  ```
+- Pull requests must target `develop` (not `main`).
+- CI must pass and all review comments must be resolved before merge.
+
+### Releasing
+1. On `develop`, run `bumpver` to bump the version (creates a commit + tag):
+   ```bash
+   bumpver update --minor --no-fetch   # or --patch / --major
+   ```
+2. Update `CHANGELOG.md` then open a PR from `develop` → `main`.
+3. After the PR merges, push the tag and publish manually:
+   ```bash
+   git push origin --tags
+   python -m build && python -m twine upload dist/*
+   ```
+
 ## Pull Request Process
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Add tests for your changes
-5. Ensure all tests pass
-6. Commit your changes (`git commit -m 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
+1. Create a branch named `issue-<number>` from `develop`
+2. Make your changes with tests
+3. Ensure all tests and linting pass: `make check`
+4. Commit your changes with a descriptive message
+5. Push and open a PR targeting `develop`
+6. Resolve all review comments before merging
 
 ## Coding Standards
 

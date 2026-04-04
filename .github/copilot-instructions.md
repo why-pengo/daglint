@@ -84,6 +84,32 @@ Config is loaded from `.daglint.yaml` in the working directory, or falls back to
    issues = rule.check(tree, "test.py", code)
    ```
 
+## Git Workflow
+
+The branching model is: `issue-<number>` → `develop` → `main` (releases only).
+
+### Feature work
+- All work must be done on a branch named after the GitHub issue (e.g., `issue-42`).
+- Always start from a fresh pull of the `develop` branch:
+  ```bash
+  git checkout develop && git pull origin develop
+  git checkout -b issue-<number>
+  ```
+- Pull requests must target `develop` (not `main`).
+- CI must pass and all review comments must be resolved before merge.
+
+### Releasing
+1. On `develop`, run `bumpver` to bump the version (creates a commit + tag locally):
+   ```bash
+   bumpver update --minor --no-fetch   # or --patch / --major
+   ```
+2. Open a PR from `develop` → `main`. This is the release PR — include CHANGELOG updates.
+3. After the PR merges, push the tag and publish manually:
+   ```bash
+   git push origin --tags
+   python -m build && python -m twine upload dist/*
+   ```
+
 ## Key Conventions
 
 - Rules are detected as abstract if `inspect.isabstract()` returns `True` — `BaseRule` is skipped automatically.

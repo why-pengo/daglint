@@ -148,9 +148,11 @@ repos:
 
 ## Publishing to PyPI
 
-When ready to publish a new version:
+When ready to release, the workflow is: bump the version on `develop`, open a PR to `main`, merge, push the tag, then publish manually.
 
 ### 1. Update Version with Bumpver
+
+Run on the `develop` branch before opening the release PR:
 
 ```bash
 # Preview the version bump
@@ -208,11 +210,13 @@ python -m twine upload dist/*
 
 You'll be prompted for your PyPI credentials or API token.
 
-### 6. Push Changes to GitHub
+### 6. Push Tag and Verify
+
+After the release PR (`develop` → `main`) has been merged:
 
 ```bash
-# Push the commit and tags
-git push origin main --tags
+# Push the version tag created by bumpver
+git push origin --tags
 ```
 
 ### Authentication Options
