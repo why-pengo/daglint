@@ -18,7 +18,6 @@ A linting tool for Apache Airflow DAG files. Uses Python's AST to enforce standa
 | `max_active_runs_validation` | Ensures `max_active_runs` is explicitly set |
 | `catchup_validation` | Checks `catchup` is explicitly set |
 | `schedule_validation` | Ensures `schedule_interval` / `schedule` is set |
-| `doc_md_validation` | Ensures `doc_md` is set on every DAG |
 
 ## Installation
 
@@ -104,10 +103,6 @@ rules:
   max_active_runs_validation:
     enabled: true
     max_active_runs: 1
-    severity: warning
-
-  doc_md_validation:
-    enabled: true
     severity: warning
 ```
 
