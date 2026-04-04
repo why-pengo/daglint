@@ -51,21 +51,24 @@ daglint init
 ```
 $ daglint check examples/invalid_dag.py
 ✗ examples/invalid_dag.py
-  ERROR   [owner_validation]         Line  8: Invalid owner 'invalid-team'. Must be one of: data-team, analytics-team, airflow
-  ERROR   [required_dag_params]      Line  8: Missing required parameters in default_args: start_date, retries
-  ERROR   [dag_id_convention]        Line 19: DAG ID 'InvalidDAGID' does not match pattern
-  WARNING [tag_requirements]         Line 19: Missing required tags: environment, team
+  ERROR   [owner_validation]           Line  8: Invalid owner 'invalid-team'. Must be one of: data-team, analytics-team, airflow
+  ERROR   [required_dag_params]        Line  8: Missing required parameters in default_args: retries, start_date
+  ERROR   [dag_id_convention]          Line 19: DAG ID 'InvalidDAGID' does not match pattern '^[a-z][a-z0-9_]*$'
+  WARNING [tag_requirements]           Line 19: Missing required tags: team, environment
   WARNING [max_active_runs_validation] Line 19: max_active_runs must be explicitly set to 1
-  WARNING [catchup_validation]       Line 19: Catchup parameter not set. Consider setting it explicitly to False
-  WARNING [schedule_validation]      Line 19: schedule_interval must be explicitly set
-  ERROR   [task_id_convention]       Line 30: Task ID 'InvalidTaskID' does not match pattern
-  ERROR   [no_duplicate_task_ids]    Line 36: Duplicate task_id 'InvalidTaskID'
+  WARNING [catchup_validation]         Line 19: Catchup parameter not set. Consider setting it explicitly to False
+  WARNING [schedule_validation]        Line 19: schedule_interval must be explicitly set
+  ERROR   [task_id_convention]         Line 30: Task ID 'InvalidTaskID' does not match pattern '^[a-z][a-z0-9_]*$'
+  ERROR   [task_id_convention]         Line 36: Task ID 'InvalidTaskID' does not match pattern '^[a-z][a-z0-9_]*$'
+  ERROR   [no_duplicate_task_ids]      Line 36: Duplicate task_id 'InvalidTaskID' (first seen at line 30)
 
-Found 9 issue(s) in 1 file(s).
+--------------------------------------------------
+Found 10 issue(s) in 1 file(s).
 
 $ daglint check examples/valid_dag.py
 ✓ examples/valid_dag.py
 
+--------------------------------------------------
 All checks passed!
 ```
 
