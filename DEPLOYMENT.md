@@ -15,10 +15,13 @@ The CI pipeline will automatically:
 
 ### Pull Request Requirements
 For a PR to be merged, it must:
-- ✅ Pass all tests
-- ✅ Maintain or improve code coverage
-- ✅ Pass all linting checks
-- ✅ Be formatted correctly
+- ✅ Pass all tests on Python 3.10, 3.11, and 3.12
+- ✅ Pass linting (flake8) and type checking (mypy)
+- ✅ Be formatted correctly (black, isort)
+
+All of these are enforced by CI — any failure blocks the merge. Coverage is
+reported on every run but not currently gated. Run `make check` locally to
+run the identical gates before pushing.
 
 ## Using DAGLint in Your Airflow Project
 
