@@ -79,8 +79,15 @@ def check(path: str, config: Optional[str], rules: Optional[str], verbose: bool,
 
     # Override rules if specified
     if rules:
-        rule_list = [r.strip() for r in rules.split(",")]
-        cfg.set_active_rules(rule_list)
+        rule_list = [r.strip() for r in rules.split(",") if r.strip()]
+        if not rule_list:
+            raise click.UsageError("--rules was given but contains no rule names")
+        unknown = [r for r in rule_list if r not in AVAILABLE_RULES]
+        if unknown:
+            raise click.UsageError(
+                f"Unknown rule(s): {', '.join(unknown)}. " f"Valid rules are: {', '.join(sorted(AVAILABLE_RULES))}"
+            )
+        cfg.set_active_rules(rule_list, all_rule_ids=list(AVAILABLE_RULES))
 
     # Collect files to lint
     files_to_check = _collect_files(target_path)
