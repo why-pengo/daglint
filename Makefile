@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help install install-dev test test-cov lint format clean build check all
+.PHONY: help install install-dev test test-cov lint format format-check clean build check all
 
 BLUE := \033[0;34m
 GREEN := \033[0;32m
@@ -34,11 +34,12 @@ help:
 	@printf "    install-dev   Install package with dev dependencies\n"
 	@printf "    test          Run tests\n"
 	@printf "    test-cov      Run tests with coverage\n"
-	@printf "    lint          Run linting checks\n"
+	@printf "    lint          Run linting checks (flake8 + mypy)\n"
 	@printf "    format        Format code with black and isort\n"
+	@printf "    format-check  Check formatting without modifying files\n"
 	@printf "    clean         Clean build artifacts\n"
 	@printf "    build         Build package\n"
-	@printf "    check         Run all quality checks (lint + test)\n"
+	@printf "    check         Run all quality checks (format-check + lint + test)\n"
 	@printf "    all           Install dev deps, format, lint, and test\n\n"
 	@printf "$(GREEN)Examples:$(NC)\n"
 	@printf "    make install-dev    # Install with dev dependencies\n"
@@ -72,22 +73,18 @@ lint:
 	@$(call print_status,Running flake8...)
 	@flake8 src/daglint
 	@$(call print_success,flake8 passed)
+	@$(call print_status,Running type checks with mypy...)
+	@mypy src/daglint --ignore-missing-imports
+	@$(call print_success,mypy check passed)
+	@$(call print_success,All linting checks completed)
+
+format-check:
 	@$(call print_status,Checking code formatting with black...)
 	@black --check src/daglint tests
 	@$(call print_success,black check passed)
 	@$(call print_status,Checking import sorting with isort...)
 	@isort --check-only src/daglint tests
 	@$(call print_success,isort check passed)
-	@$(call print_status,Running type checks with mypy...)
-	@set +e; \
-	mypy src/daglint --ignore-missing-imports; \
-	status=$$?; \
-	if [ $$status -eq 0 ]; then \
-		$(call print_success,mypy check passed); \
-	else \
-		$(call print_warning,mypy check completed with warnings); \
-	fi
-	@$(call print_success,All linting checks completed)
 
 format:
 	@$(call print_status,Formatting code with black...)
@@ -112,7 +109,7 @@ build: clean
 
 check:
 	@$(call print_status,Running all quality checks...)
-	@$(MAKE) format
+	@$(MAKE) format-check
 	@$(MAKE) lint
 	@$(MAKE) test
 	@$(call print_success,All checks passed! 🎉)

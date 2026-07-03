@@ -42,23 +42,19 @@ jobs:
 
     - name: Run linting with flake8
       run: |
-        flake8 src/daglint --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 src/daglint --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        flake8 src/daglint --count --statistics
 
     - name: Run type checking with mypy
       run: |
         mypy src/daglint --ignore-missing-imports
-      continue-on-error: true
 
     - name: Check code formatting with black
       run: |
         black --check src/daglint tests
-      continue-on-error: true
 
     - name: Check import sorting with isort
       run: |
         isort --check-only src/daglint tests
-      continue-on-error: true
 
     - name: Run tests with pytest
       run: |
