@@ -47,16 +47,6 @@ class MaxActiveRunsValidationRule(BaseRule):
 
         return issues
 
-    def _is_dag_call(self, node: ast.Call) -> bool:
-        """Check if a call is a DAG instantiation."""
-        if isinstance(node.func, ast.Name):
-            return node.func.id == "DAG"
-
-        if isinstance(node.func, ast.Attribute):
-            return node.func.attr == "DAG"
-
-        return False
-
     def _extract_max_active_runs(self, node: ast.Call) -> Optional[int]:
         """Extract max_active_runs from a DAG() call."""
         for keyword in node.keywords:

@@ -163,6 +163,35 @@ dag = DAG(
         assert len(issues) == 1
         assert "DAG owner must be specified" in issues[0].message
 
+    def test_non_dag_call_with_default_args_kwarg_ignored(self):
+        """Regression test: default_args kwargs on non-DAG calls are not inspected."""
+        code = """
+default_args = {
+    'owner': 'data-team'
+}
+
+with TaskGroup("group", default_args={'retries': 1}):
+    pass
+"""
+        tree = ast.parse(code)
+        rule = OwnerValidationRule({"valid_owners": ["data-team", "analytics-team"]})
+        issues = rule.check(tree, "test.py", code)
+        assert len(issues) == 0
+
+    def test_attribute_dag_call_inline_default_args_validated(self):
+        """Test that models.DAG(default_args={...}) is still validated."""
+        code = """
+dag = models.DAG(
+    dag_id="my_dag",
+    default_args={'retries': 2},
+)
+"""
+        tree = ast.parse(code)
+        rule = OwnerValidationRule({"valid_owners": ["data-team", "analytics-team"]})
+        issues = rule.check(tree, "test.py", code)
+        assert len(issues) == 1
+        assert "DAG owner must be specified" in issues[0].message
+
     def test_dynamic_owner_value_skipped(self):
         """Test that a non-literal owner value is skipped, not flagged."""
         code = """

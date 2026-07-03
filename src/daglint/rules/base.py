@@ -60,6 +60,21 @@ class BaseRule(ABC):
             return node.func.attr.endswith("Operator")
         return False
 
+    def _is_dag_call(self, node: ast.Call) -> bool:
+        """Check if a call is a DAG instantiation.
+
+        Args:
+            node: AST Call node to check
+
+        Returns:
+            True if the call is a DAG instantiation
+        """
+        if isinstance(node.func, ast.Name):
+            return node.func.id == "DAG"
+        elif isinstance(node.func, ast.Attribute):
+            return node.func.attr == "DAG"
+        return False
+
     def _extract_task_id(self, node: ast.Call) -> Optional[str]:
         """Extract task_id from an operator call.
 
@@ -122,7 +137,7 @@ class BaseRule(ABC):
                     isinstance(target, ast.Name) and target.id == "default_args" for target in node.targets
                 ):
                     dicts.append(node.value)
-            elif isinstance(node, ast.Call):
+            elif isinstance(node, ast.Call) and self._is_dag_call(node):
                 for keyword in node.keywords:
                     if keyword.arg == "default_args" and isinstance(keyword.value, ast.Dict):
                         dicts.append(keyword.value)
