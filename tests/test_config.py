@@ -4,8 +4,12 @@ import tempfile
 from pathlib import Path
 
 import pytest
+import yaml
 
 from daglint.config import Config
+from daglint.rules import AVAILABLE_RULES
+
+EXAMPLE_CONFIG_PATH = Path(__file__).parent.parent / ".daglint.example.yaml"
 
 
 def test_default_config():
@@ -71,3 +75,32 @@ def test_generate_default_config():
         assert config.is_rule_enabled("dag_id_convention")
         assert config.is_rule_enabled("max_active_runs_validation")
         assert config.get_rule_config("max_active_runs_validation")["max_active_runs"] == 1
+
+
+def _default_rule_config():
+    """Return the rules section of the default config."""
+    return Config._default_config()["rules"]
+
+
+def _example_rule_config():
+    """Return the rules section of the committed example config."""
+    with open(EXAMPLE_CONFIG_PATH, "r") as f:
+        return yaml.safe_load(f)["rules"]
+
+
+def test_default_config_covers_all_rules():
+    """Every registered rule has a default config entry, and vice versa."""
+    assert set(_default_rule_config()) == set(AVAILABLE_RULES)
+
+
+def test_example_config_matches_available_rules():
+    """The example config's rule set exactly matches AVAILABLE_RULES."""
+    assert set(_example_rule_config()) == set(AVAILABLE_RULES)
+
+
+@pytest.mark.parametrize("rule_id", sorted(AVAILABLE_RULES))
+def test_default_rule_entry_has_enabled_and_severity(rule_id):
+    """Each default rule entry declares enabled and severity."""
+    entry = _default_rule_config()[rule_id]
+    assert "enabled" in entry
+    assert "severity" in entry
