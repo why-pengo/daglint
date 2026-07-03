@@ -22,21 +22,19 @@ class NoDuplicateTaskIDsRule(BaseRule):
         issues = []
         task_ids: dict[str, int] = {}
 
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                if self._is_operator_call(node):
-                    task_id = self._extract_task_id(node)
-                    if task_id:
-                        if task_id in task_ids:
-                            issues.append(
-                                self.create_issue(
-                                    f"Duplicate task_id '{task_id}' (first seen at line {task_ids[task_id]})",
-                                    file_path,
-                                    node.lineno,
-                                    node.col_offset,
-                                )
-                            )
-                        else:
-                            task_ids[task_id] = node.lineno
+        for definition in self._find_task_definitions(tree):
+            task_id = definition.task_id
+            if task_id:
+                if task_id in task_ids:
+                    issues.append(
+                        self.create_issue(
+                            f"Duplicate task_id '{task_id}' (first seen at line {task_ids[task_id]})",
+                            file_path,
+                            definition.lineno,
+                            definition.col_offset,
+                        )
+                    )
+                else:
+                    task_ids[task_id] = definition.lineno
 
         return issues
