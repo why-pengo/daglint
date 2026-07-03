@@ -153,6 +153,79 @@ default_args = {
         assert len(issues) == 1
         assert "Missing required parameters" in issues[0].message
 
+    def test_inline_default_args_missing_params(self):
+        """Test that inline DAG(default_args={...}) missing params is caught (#41)."""
+        code = """
+dag = DAG(
+    dag_id='my_dag',
+    default_args={'owner': 'airflow'},
+)
+"""
+        tree = ast.parse(code)
+        rule = RequiredDAGParamsRule({"required_params": ["owner", "start_date", "retries"]})
+        issues = rule.check(tree, "test.py", code)
+        assert len(issues) == 1
+        assert "Missing required parameters in default_args: retries, start_date" in issues[0].message
+
+    def test_inline_default_args_all_params_present(self):
+        """Test that inline default_args with all required params passes (#41)."""
+        code = """
+dag = DAG(
+    dag_id='my_dag',
+    default_args={'owner': 'airflow', 'start_date': '2023-01-01', 'retries': 3},
+)
+"""
+        tree = ast.parse(code)
+        rule = RequiredDAGParamsRule({"required_params": ["owner", "start_date", "retries"]})
+        issues = rule.check(tree, "test.py", code)
+        assert len(issues) == 0
+
+    def test_assignment_and_inline_forms_both_checked(self):
+        """Test that assignment and a separate inline default_args are each validated."""
+        code = """
+default_args = {
+    'owner': 'airflow',
+    'start_date': '2023-01-01'
+}
+
+dag = DAG(
+    dag_id='my_dag',
+    default_args={'owner': 'airflow'},
+)
+"""
+        tree = ast.parse(code)
+        rule = RequiredDAGParamsRule({"required_params": ["owner", "start_date"]})
+        issues = rule.check(tree, "test.py", code)
+        assert len(issues) == 1
+        assert "start_date" in issues[0].message
+
+    def test_non_dag_call_default_args_ignored(self):
+        """Test that default_args kwargs on non-DAG calls are not inspected."""
+        code = """
+default_args = {
+    'owner': 'airflow',
+    'start_date': '2023-01-01'
+}
+
+with TaskGroup('group', default_args={'retries': 1}):
+    pass
+"""
+        tree = ast.parse(code)
+        rule = RequiredDAGParamsRule({"required_params": ["owner", "start_date"]})
+        issues = rule.check(tree, "test.py", code)
+        assert len(issues) == 0
+
+    def test_missing_params_listed_in_sorted_order(self):
+        """Missing params are reported in deterministic (sorted) order."""
+        code = """
+default_args = {}
+"""
+        tree = ast.parse(code)
+        rule = RequiredDAGParamsRule({"required_params": ["start_date", "owner", "retries"]})
+        issues = rule.check(tree, "test.py", code)
+        assert len(issues) == 1
+        assert "Missing required parameters in default_args: owner, retries, start_date" in issues[0].message
+
     def test_rule_has_metadata(self):
         """Test that rule has required metadata."""
         rule = RequiredDAGParamsRule()
