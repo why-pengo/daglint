@@ -238,7 +238,7 @@ dag = DAG('my_dag')
 
 
 def test_check_help_does_not_advertise_fix():
-    """--fix was a no-op flag; it must not appear in help until implemented (#35)."""
+    """--fix is gone for good (autofix is out of scope); help must not mention it (#35)."""
     runner = CliRunner()
     result = runner.invoke(cli, ["check", "--help"])
     assert result.exit_code == 0
@@ -256,13 +256,13 @@ dag = DAG('my_dag')
     runner = CliRunner()
     with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
         f.write(code)
-        f.flush()
-
+    try:
         result = runner.invoke(cli, ["check", f.name, "--fix"])
+    finally:
         Path(f.name).unlink()
 
-        assert result.exit_code == 2
-        assert "No such option" in result.output
+    assert result.exit_code == 2
+    assert "No such option" in result.output
 
 
 def test_rules_command():
