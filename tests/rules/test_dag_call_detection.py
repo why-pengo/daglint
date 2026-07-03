@@ -16,11 +16,13 @@ DAG_SCOPED_RULES = [
     "max_active_runs_validation",
 ]
 
-# The same minimal DAG — violating every DAG-scoped rule — spelled three ways.
+# The same minimal DAG — violating every DAG-scoped rule — spelled five ways.
 SPELLINGS = {
     "bare_name": "dag = DAG('InvalidDAGID')\n",
     "attribute": "import airflow\ndag = airflow.DAG('InvalidDAGID')\n",
     "context_manager": "with DAG('InvalidDAGID') as dag:\n    pass\n",
+    "taskflow": "from airflow.decorators import dag\n\n@dag('InvalidDAGID')\ndef my_pipeline():\n    pass\n",
+    "taskflow_bare": "from airflow.decorators import dag\n\n@dag\ndef InvalidDAGID():\n    pass\n",
 }
 
 
@@ -38,4 +40,6 @@ def test_rule_covers_all_dag_call_spellings(rule_id):
     for spelling, messages in results.items():
         assert messages, f"{rule_id} produced no issues for the {spelling} spelling"
 
-    assert results["bare_name"] == results["attribute"] == results["context_manager"]
+    reference = results["bare_name"]
+    for spelling, messages in results.items():
+        assert messages == reference, f"{rule_id}: {spelling} spelling diverges from bare_name"
