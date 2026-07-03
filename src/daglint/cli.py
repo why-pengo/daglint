@@ -78,7 +78,7 @@ def check(path: str, config: Optional[str], rules: Optional[str], verbose: bool,
     cfg = _load_config(config)
 
     # Override rules if specified
-    if rules:
+    if rules is not None:
         rule_list = [r.strip() for r in rules.split(",") if r.strip()]
         if not rule_list:
             raise click.UsageError("--rules was given but contains no rule names")

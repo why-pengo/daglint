@@ -183,11 +183,11 @@ dag = DAG('InvalidDAGID')
         f.write(code)
         f.flush()
 
-        result = runner.invoke(cli, ["check", f.name, "--rules", ","])
+        for empty_value in (",", ""):
+            result = runner.invoke(cli, ["check", f.name, "--rules", empty_value])
+            assert result.exit_code == 2
+            assert "All checks passed" not in result.output
         Path(f.name).unlink()
-
-        assert result.exit_code == 2
-        assert "All checks passed" not in result.output
 
 
 def test_check_rules_with_partial_config_disables_unlisted_rules():
