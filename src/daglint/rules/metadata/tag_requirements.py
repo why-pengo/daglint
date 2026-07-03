@@ -26,19 +26,18 @@ class TagRequirementsRule(BaseRule):
             return issues
 
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Name) and node.func.id == "DAG":
-                    tags = self._extract_tags(node)
-                    missing_tags = set(required_tags) - set(tags)
-                    if missing_tags:
-                        issues.append(
-                            self.create_issue(
-                                f"Missing required tags: {', '.join(missing_tags)}",
-                                file_path,
-                                node.lineno,
-                                node.col_offset,
-                            )
+            if isinstance(node, ast.Call) and self._is_dag_call(node):
+                tags = self._extract_tags(node)
+                missing_tags = set(required_tags) - set(tags)
+                if missing_tags:
+                    issues.append(
+                        self.create_issue(
+                            f"Missing required tags: {', '.join(missing_tags)}",
+                            file_path,
+                            node.lineno,
+                            node.col_offset,
                         )
+                    )
 
         return issues
 

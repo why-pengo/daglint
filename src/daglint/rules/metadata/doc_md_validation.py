@@ -22,27 +22,26 @@ class DocMdValidationRule(BaseRule):
         issues = []
 
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Name) and node.func.id == "DAG":
-                    doc_md = self._extract_doc_md(node)
-                    if doc_md is None:
-                        issues.append(
-                            self.create_issue(
-                                "DAG is missing doc_md documentation",
-                                file_path,
-                                node.lineno,
-                                node.col_offset,
-                            )
+            if isinstance(node, ast.Call) and self._is_dag_call(node):
+                doc_md = self._extract_doc_md(node)
+                if doc_md is None:
+                    issues.append(
+                        self.create_issue(
+                            "DAG is missing doc_md documentation",
+                            file_path,
+                            node.lineno,
+                            node.col_offset,
                         )
-                    elif doc_md.strip() == "":
-                        issues.append(
-                            self.create_issue(
-                                "DAG doc_md must not be empty",
-                                file_path,
-                                node.lineno,
-                                node.col_offset,
-                            )
+                    )
+                elif doc_md.strip() == "":
+                    issues.append(
+                        self.create_issue(
+                            "DAG doc_md must not be empty",
+                            file_path,
+                            node.lineno,
+                            node.col_offset,
                         )
+                    )
 
         return issues
 
