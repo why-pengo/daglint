@@ -7,6 +7,63 @@ from typing import Any, Dict, List, Optional
 from daglint.models import LintIssue
 
 
+class DagDefinition:
+    """A DAG defined either as a DAG(...) call or an @dag-decorated function.
+
+    Normalizes the two forms so rules can read DAG arguments and the
+    effective DAG ID without caring how the DAG was declared.
+    """
+
+    def __init__(
+        self,
+        call: Optional[ast.Call],
+        function_name: Optional[str] = None,
+        position: Optional[ast.expr] = None,
+    ):
+        """Initialize a DAG definition.
+
+        Args:
+            call: The DAG(...) call or @dag(...) decorator call; None for a
+                bare @dag decorator
+            function_name: Name of the decorated function (decorator form only)
+            position: Node to report issues at; defaults to the call
+        """
+        self.call = call
+        self.function_name = function_name
+        anchor = position if position is not None else call
+        self.lineno = anchor.lineno if anchor is not None else 0
+        self.col_offset = anchor.col_offset if anchor is not None else 0
+
+    def get_kwarg(self, name: str) -> Optional[ast.expr]:
+        """Return the AST value node for a keyword argument, if present.
+
+        Args:
+            name: Keyword argument name
+
+        Returns:
+            The value node, or None if the argument is absent
+        """
+        if self.call is None:
+            return None
+        for keyword in self.call.keywords:
+            if keyword.arg == name:
+                return keyword.value
+        return None
+
+    @property
+    def dag_id(self) -> Optional[str]:
+        """Effective DAG ID: explicit argument, else the decorated function name."""
+        if self.call is not None:
+            if self.call.args:
+                first = self.call.args[0]
+                if isinstance(first, ast.Constant) and isinstance(first.value, str):
+                    return first.value
+            value = self.get_kwarg("dag_id")
+            if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                return value.value
+        return self.function_name
+
+
 class BaseRule(ABC):
     """Base class for all linting rules."""
 
@@ -92,37 +149,54 @@ class BaseRule(ABC):
                         return value
         return None
 
-    def _extract_dag_id(self, node: ast.Call) -> Optional[str]:
-        """Extract DAG ID from a DAG() call.
+    def _is_dag_decorator(self, node: ast.expr) -> bool:
+        """Check if a decorator node is an @dag decorator (bare or called).
 
         Args:
-            node: AST Call node representing a DAG instantiation
+            node: Entry from a FunctionDef's decorator_list
 
         Returns:
-            The dag_id string if found, None otherwise
+            True if the decorator is @dag, @dag(...), or @<module>.dag(...)
         """
-        # Check positional arguments
-        if node.args and isinstance(node.args[0], ast.Constant):
-            value = node.args[0].value
-            if isinstance(value, str):
-                return value
+        target = node.func if isinstance(node, ast.Call) else node
+        if isinstance(target, ast.Name):
+            return target.id == "dag"
+        elif isinstance(target, ast.Attribute):
+            return target.attr == "dag"
+        return False
 
-        # Check keyword arguments
-        for keyword in node.keywords:
-            if keyword.arg == "dag_id":
-                if isinstance(keyword.value, ast.Constant):
-                    value = keyword.value.value
-                    if isinstance(value, str):
-                        return value
+    def _find_dag_definitions(self, tree: ast.AST) -> List[DagDefinition]:
+        """Find every DAG definition in a file.
 
-        return None
+        Matches both declaration styles:
+            DAG(...) / <module>.DAG(...) instantiation calls
+            @dag / @dag(...) decorated functions (TaskFlow API)
+
+        Args:
+            tree: Abstract syntax tree of the file
+
+        Returns:
+            List of normalized DAG definitions
+        """
+        definitions = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and self._is_dag_call(node):
+                definitions.append(DagDefinition(call=node))
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                for decorator in node.decorator_list:
+                    if self._is_dag_decorator(decorator):
+                        call = decorator if isinstance(decorator, ast.Call) else None
+                        definitions.append(DagDefinition(call=call, function_name=node.name, position=decorator))
+                        break
+        return definitions
 
     def _find_default_args_dicts(self, tree: ast.AST) -> List[ast.Dict]:
         """Find dict literals bound to default_args.
 
-        Matches both forms:
+        Matches all forms:
             default_args = {...}
             DAG(..., default_args={...})
+            @dag(default_args={...})
 
         Args:
             tree: Abstract syntax tree of the file
@@ -137,10 +211,10 @@ class BaseRule(ABC):
                     isinstance(target, ast.Name) and target.id == "default_args" for target in node.targets
                 ):
                     dicts.append(node.value)
-            elif isinstance(node, ast.Call) and self._is_dag_call(node):
-                for keyword in node.keywords:
-                    if keyword.arg == "default_args" and isinstance(keyword.value, ast.Dict):
-                        dicts.append(keyword.value)
+        for definition in self._find_dag_definitions(tree):
+            value = definition.get_kwarg("default_args")
+            if isinstance(value, ast.Dict):
+                dicts.append(value)
         return dicts
 
     def create_issue(self, message: str, file_path: str, line: int, column: int = 0) -> LintIssue:

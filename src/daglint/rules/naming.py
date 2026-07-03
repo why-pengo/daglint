@@ -23,19 +23,17 @@ class DAGIDConventionRule(BaseRule):
         issues = []
         pattern = self.config.get("pattern", r"^[a-z][a-z0-9_]*$")
 
-        for node in ast.walk(tree):
-            # Look for DAG instantiation
-            if isinstance(node, ast.Call) and self._is_dag_call(node):
-                dag_id = self._extract_dag_id(node)
-                if dag_id and not re.match(pattern, dag_id):
-                    issues.append(
-                        self.create_issue(
-                            f"DAG ID '{dag_id}' does not match pattern '{pattern}'",
-                            file_path,
-                            node.lineno,
-                            node.col_offset,
-                        )
+        for definition in self._find_dag_definitions(tree):
+            dag_id = definition.dag_id
+            if dag_id and not re.match(pattern, dag_id):
+                issues.append(
+                    self.create_issue(
+                        f"DAG ID '{dag_id}' does not match pattern '{pattern}'",
+                        file_path,
+                        definition.lineno,
+                        definition.col_offset,
                     )
+                )
 
         return issues
 

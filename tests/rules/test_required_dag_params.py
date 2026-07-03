@@ -215,6 +215,21 @@ with TaskGroup('group', default_args={'retries': 1}):
         issues = rule.check(tree, "test.py", code)
         assert len(issues) == 0
 
+    def test_taskflow_decorator_default_args_checked(self):
+        """default_args passed to @dag(...) is checked for required params (#34)."""
+        code = """
+from airflow.decorators import dag
+
+@dag(default_args={'owner': 'airflow'})
+def my_pipeline():
+    pass
+"""
+        tree = ast.parse(code)
+        rule = RequiredDAGParamsRule({"required_params": ["owner", "start_date", "retries"]})
+        issues = rule.check(tree, "test.py", code)
+        assert len(issues) == 1
+        assert "Missing required parameters in default_args: retries, start_date" in issues[0].message
+
     def test_missing_params_listed_in_sorted_order(self):
         """Missing params are reported in deterministic (sorted) order."""
         code = """

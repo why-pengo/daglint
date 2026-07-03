@@ -37,6 +37,11 @@ with DAG(
     max_active_runs=1,
     catchup=False,
     tags=['environment', 'team', 'example'],
+    doc_md="""
+    ### Example Valid DAG
+
+    Demonstrates the classic DAG style that daglint validates.
+    """,
 ) as dag:
 
     task_hello = PythonOperator(
