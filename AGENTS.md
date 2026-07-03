@@ -3,7 +3,7 @@
 ## Quick commands
 - `make check` — run the full pipeline: **format → lint → test** (order matters!)
   - Format with **black** (line-length 127) + **isort** (`profile = black`, line-length 127)
-  - Lint with **flake8** (src/daglint), **black --check**, **isort --check-only**, and **mypy** — all on `src/daglint` and `tests`
+  - Lint with **flake8** (`src/daglint`), **black --check** + **isort --check-only** (`src/daglint` and `tests`), and **mypy** (`src/daglint`, non-fatal — warnings don't fail the build)
   - Test with **pytest tests/ -v**
     - Tests run from the repo root; config is in `pyproject.toml` under `[tool.pytest.ini_options]`
 - Direct commands: `black src/daglint tests`, `isort src/daglint tests`, `flake8 src/daglint`, `mypy src/daglint --ignore-missing-imports`, `pytest tests/ -v`
@@ -25,7 +25,7 @@
 1. Create rule class in the appropriate module under `src/daglint/rules/` (or `rules/metadata/`)
 2. Inherit from `BaseRule`, implement `rule_id`, `description`, `check`
 3. Export in `src/daglint/rules/__init__.py` and add to `AVAILABLE_RULES`
-4. Add defaults in `src/daglint/config.py`
+4. Add defaults in `src/daglint/config.py` **and** keep the sample config `.daglint.example.yaml` in sync
 5. Write tests in `tests/rules/test_<rule_id>.py`
 
 ## Branching / PRs
