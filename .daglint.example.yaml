@@ -56,3 +56,7 @@ rules:
     enabled: true
     default_catchup: false
     severity: warning
+
+  doc_md_validation:
+    enabled: true
+    severity: warning
