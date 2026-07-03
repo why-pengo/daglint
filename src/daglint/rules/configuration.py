@@ -73,18 +73,17 @@ class CatchupValidationRule(BaseRule):
         default_catchup = self.config.get("default_catchup", False)
 
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Name) and node.func.id == "DAG":
-                    catchup_value = self._extract_catchup(node)
-                    if catchup_value is None:
-                        issues.append(
-                            self.create_issue(
-                                f"Catchup parameter not set. Consider setting it explicitly to {default_catchup}",
-                                file_path,
-                                node.lineno,
-                                node.col_offset,
-                            )
+            if isinstance(node, ast.Call) and self._is_dag_call(node):
+                catchup_value = self._extract_catchup(node)
+                if catchup_value is None:
+                    issues.append(
+                        self.create_issue(
+                            f"Catchup parameter not set. Consider setting it explicitly to {default_catchup}",
+                            file_path,
+                            node.lineno,
+                            node.col_offset,
                         )
+                    )
 
         return issues
 
@@ -115,18 +114,17 @@ class ScheduleValidationRule(BaseRule):
         allow_none = self.config.get("allow_none", False)
 
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Name) and node.func.id == "DAG":
-                    schedule_value = self._extract_schedule(node)
-                    if schedule_value is None and not allow_none:
-                        issues.append(
-                            self.create_issue(
-                                "schedule_interval must be explicitly set",
-                                file_path,
-                                node.lineno,
-                                node.col_offset,
-                            )
+            if isinstance(node, ast.Call) and self._is_dag_call(node):
+                schedule_value = self._extract_schedule(node)
+                if schedule_value is None and not allow_none:
+                    issues.append(
+                        self.create_issue(
+                            "schedule_interval must be explicitly set",
+                            file_path,
+                            node.lineno,
+                            node.col_offset,
                         )
+                    )
 
         return issues
 
