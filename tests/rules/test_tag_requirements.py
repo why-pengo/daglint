@@ -34,6 +34,19 @@ dag = DAG('my_dag', tags=['environment'])
         assert "Missing required tags" in issues[0].message
         assert "team" in issues[0].message
 
+    def test_missing_tags_listed_in_sorted_order(self):
+        """Missing tags are reported in deterministic (sorted) order."""
+        code = """
+from airflow import DAG
+
+dag = DAG('my_dag')
+"""
+        tree = ast.parse(code)
+        rule = TagRequirementsRule({"required_tags": ["team", "environment", "criticality"]})
+        issues = rule.check(tree, "test.py", code)
+        assert len(issues) == 1
+        assert "Missing required tags: criticality, environment, team" in issues[0].message
+
     def test_no_tags_provided(self):
         """Test that missing all tags are caught."""
         code = """

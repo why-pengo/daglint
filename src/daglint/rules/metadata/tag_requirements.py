@@ -32,7 +32,7 @@ class TagRequirementsRule(BaseRule):
                 if missing_tags:
                     issues.append(
                         self.create_issue(
-                            f"Missing required tags: {', '.join(missing_tags)}",
+                            f"Missing required tags: {', '.join(sorted(missing_tags))}",
                             file_path,
                             node.lineno,
                             node.col_offset,
