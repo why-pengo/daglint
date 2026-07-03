@@ -52,15 +52,23 @@ class DagDefinition:
 
     @property
     def dag_id(self) -> Optional[str]:
-        """Effective DAG ID: explicit argument, else the decorated function name."""
+        """Effective DAG ID: explicit argument, else the decorated function name.
+
+        Returns None when a dag_id argument is present but not a static
+        string — a dynamic ID overrides the function-name default in
+        Airflow, so nothing can be validated.
+        """
         if self.call is not None:
             if self.call.args:
                 first = self.call.args[0]
                 if isinstance(first, ast.Constant) and isinstance(first.value, str):
                     return first.value
+                return None
             value = self.get_kwarg("dag_id")
-            if isinstance(value, ast.Constant) and isinstance(value.value, str):
-                return value.value
+            if value is not None:
+                if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                    return value.value
+                return None
         return self.function_name
 
 

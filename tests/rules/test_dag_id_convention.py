@@ -89,6 +89,33 @@ def my_pipeline():
         assert len(issues) == 1
         assert "BadDagId" in issues[0].message
 
+    def test_taskflow_dynamic_dag_id_skips_function_name(self):
+        """A dynamic dag_id= overrides the function name in Airflow, so
+        neither can be validated (#34 review)."""
+        code = """
+from airflow.decorators import dag
+
+@dag(dag_id=DYNAMIC_ID)
+def MyBadPipelineName():
+    pass
+"""
+        tree = ast.parse(code)
+        rule = DAGIDConventionRule()
+        issues = rule.check(tree, "test.py", code)
+        assert len(issues) == 0
+
+    def test_dynamic_positional_dag_id_skipped(self):
+        """A dynamic positional DAG ID cannot be validated."""
+        code = """
+from airflow import DAG
+
+dag = DAG(f"team_{suffix}")
+"""
+        tree = ast.parse(code)
+        rule = DAGIDConventionRule()
+        issues = rule.check(tree, "test.py", code)
+        assert len(issues) == 0
+
     def test_unrelated_decorator_not_matched(self):
         """Decorators that are not @dag do not create DAG definitions (#34)."""
         code = """
