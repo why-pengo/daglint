@@ -66,8 +66,7 @@ def _print_summary(total_issues: int, file_count: int):
 @click.option("--config", "-c", type=click.Path(exists=True), help="Path to configuration file")
 @click.option("--rules", "-r", help="Comma-separated list of rules to check")
 @click.option("--verbose", "-v", is_flag=True, help="Verbose output")
-@click.option("--fix", is_flag=True, help="Automatically fix issues where possible")
-def check(path: str, config: Optional[str], rules: Optional[str], verbose: bool, fix: bool):
+def check(path: str, config: Optional[str], rules: Optional[str], verbose: bool):
     """Check DAG files for linting issues.
 
     PATH can be a single file or a directory containing DAG files.

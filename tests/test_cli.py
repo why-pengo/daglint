@@ -237,6 +237,34 @@ dag = DAG('my_dag')
         assert "Checking:" in result.output
 
 
+def test_check_help_does_not_advertise_fix():
+    """--fix is gone for good (autofix is out of scope); help must not mention it (#35)."""
+    runner = CliRunner()
+    result = runner.invoke(cli, ["check", "--help"])
+    assert result.exit_code == 0
+    assert "--fix" not in result.output
+
+
+def test_check_fix_flag_rejected():
+    """Passing the removed --fix flag is a usage error, not a silent no-op (#35)."""
+    code = """
+from airflow import DAG
+
+dag = DAG('my_dag')
+"""
+
+    runner = CliRunner()
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        f.write(code)
+    try:
+        result = runner.invoke(cli, ["check", f.name, "--fix"])
+    finally:
+        Path(f.name).unlink()
+
+    assert result.exit_code == 2
+    assert "No such option" in result.output
+
+
 def test_rules_command():
     """Test rules command."""
     runner = CliRunner()
