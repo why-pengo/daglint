@@ -121,14 +121,19 @@ class Config:
         rule_config = self.get_rule_config(rule_id)
         return bool(rule_config.get("enabled", True))
 
-    def set_active_rules(self, rule_ids: List[str]) -> None:
-        """Enable only specified rules.
+    def set_active_rules(self, rule_ids: List[str], all_rule_ids: Optional[List[str]] = None) -> None:
+        """Enable only the specified rules, disabling all others.
 
         Args:
             rule_ids: List of rule IDs to enable
+            all_rule_ids: Full universe of known rule IDs. Rules listed here
+                but absent from the loaded config get an explicit disabled
+                entry, so a partial config file cannot leave them enabled
+                by default.
         """
-        for rule_id in self.rules_config:
-            self.rules_config[rule_id]["enabled"] = rule_id in rule_ids
+        universe = set(self.rules_config) | set(rule_ids) | set(all_rule_ids or [])
+        for rule_id in universe:
+            self.rules_config.setdefault(rule_id, {})["enabled"] = rule_id in rule_ids
 
     @staticmethod
     def generate_default_config(output_path: str) -> None:

@@ -66,8 +66,7 @@ def _print_summary(total_issues: int, file_count: int):
 @click.option("--config", "-c", type=click.Path(exists=True), help="Path to configuration file")
 @click.option("--rules", "-r", help="Comma-separated list of rules to check")
 @click.option("--verbose", "-v", is_flag=True, help="Verbose output")
-@click.option("--fix", is_flag=True, help="Automatically fix issues where possible")
-def check(path: str, config: Optional[str], rules: Optional[str], verbose: bool, fix: bool):
+def check(path: str, config: Optional[str], rules: Optional[str], verbose: bool):
     """Check DAG files for linting issues.
 
     PATH can be a single file or a directory containing DAG files.
@@ -78,9 +77,16 @@ def check(path: str, config: Optional[str], rules: Optional[str], verbose: bool,
     cfg = _load_config(config)
 
     # Override rules if specified
-    if rules:
-        rule_list = [r.strip() for r in rules.split(",")]
-        cfg.set_active_rules(rule_list)
+    if rules is not None:
+        rule_list = [r.strip() for r in rules.split(",") if r.strip()]
+        if not rule_list:
+            raise click.UsageError("--rules was given but contains no rule names")
+        unknown = [r for r in rule_list if r not in AVAILABLE_RULES]
+        if unknown:
+            raise click.UsageError(
+                f"Unknown rule(s): {', '.join(unknown)}. " f"Valid rules are: {', '.join(sorted(AVAILABLE_RULES))}"
+            )
+        cfg.set_active_rules(rule_list, all_rule_ids=list(AVAILABLE_RULES))
 
     # Collect files to lint
     files_to_check = _collect_files(target_path)
