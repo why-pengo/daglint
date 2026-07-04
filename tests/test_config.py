@@ -64,6 +64,26 @@ def test_set_active_rules():
     assert not config.is_rule_enabled("task_id_convention")
 
 
+def test_set_active_rules_is_authoritative():
+    """After set_active_rules, exactly the requested rules are enabled (#32)."""
+    config = Config.default()
+    config.set_active_rules(["owner_validation"], all_rule_ids=list(AVAILABLE_RULES))
+
+    for rule_id in AVAILABLE_RULES:
+        assert config.is_rule_enabled(rule_id) == (rule_id == "owner_validation")
+
+
+def test_set_active_rules_disables_rules_missing_from_partial_config():
+    """Rules absent from a partial config get an explicit disabled entry (#32)."""
+    config = Config({"rules": {"dag_id_convention": {"enabled": True}}})
+    config.set_active_rules(["dag_id_convention"], all_rule_ids=list(AVAILABLE_RULES))
+
+    assert config.is_rule_enabled("dag_id_convention")
+    for rule_id in AVAILABLE_RULES:
+        if rule_id != "dag_id_convention":
+            assert not config.is_rule_enabled(rule_id)
+
+
 def test_generate_default_config():
     """Test generating default configuration file."""
     with tempfile.TemporaryDirectory() as tmpdir:

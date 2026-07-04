@@ -22,36 +22,32 @@ class MaxActiveRunsValidationRule(BaseRule):
         issues = []
         expected_max_active_runs = self.config.get("max_active_runs", 1)
 
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and self._is_dag_call(node):
-                max_active_runs = self._extract_max_active_runs(node)
+        for definition in self._find_dag_definitions(tree):
+            max_active_runs = self._extract_max_active_runs(definition.get_kwarg("max_active_runs"))
 
-                if max_active_runs is None:
-                    issues.append(
-                        self.create_issue(
-                            f"max_active_runs must be explicitly set to {expected_max_active_runs}",
-                            file_path,
-                            node.lineno,
-                            node.col_offset,
-                        )
+            if max_active_runs is None:
+                issues.append(
+                    self.create_issue(
+                        f"max_active_runs must be explicitly set to {expected_max_active_runs}",
+                        file_path,
+                        definition.lineno,
+                        definition.col_offset,
                     )
-                elif max_active_runs != expected_max_active_runs:
-                    issues.append(
-                        self.create_issue(
-                            f"max_active_runs is set to {max_active_runs}. Expected {expected_max_active_runs}",
-                            file_path,
-                            node.lineno,
-                            node.col_offset,
-                        )
+                )
+            elif max_active_runs != expected_max_active_runs:
+                issues.append(
+                    self.create_issue(
+                        f"max_active_runs is set to {max_active_runs}. Expected {expected_max_active_runs}",
+                        file_path,
+                        definition.lineno,
+                        definition.col_offset,
                     )
+                )
 
         return issues
 
-    def _extract_max_active_runs(self, node: ast.Call) -> Optional[int]:
-        """Extract max_active_runs from a DAG() call."""
-        for keyword in node.keywords:
-            if keyword.arg == "max_active_runs":
-                if isinstance(keyword.value, ast.Constant) and isinstance(keyword.value.value, int):
-                    return keyword.value.value
-
+    def _extract_max_active_runs(self, value: Optional[ast.expr]) -> Optional[int]:
+        """Extract an integer from a max_active_runs argument value node."""
+        if isinstance(value, ast.Constant) and isinstance(value.value, int):
+            return value.value
         return None

@@ -192,6 +192,21 @@ dag = models.DAG(
         assert len(issues) == 1
         assert "DAG owner must be specified" in issues[0].message
 
+    def test_taskflow_decorator_default_args_validated(self):
+        """default_args passed to @dag(...) is validated like DAG(...) (#34)."""
+        code = """
+from airflow.decorators import dag
+
+@dag(default_args={'retries': 2})
+def my_pipeline():
+    pass
+"""
+        tree = ast.parse(code)
+        rule = OwnerValidationRule({"valid_owners": ["data-team", "analytics-team"]})
+        issues = rule.check(tree, "test.py", code)
+        assert len(issues) == 1
+        assert "DAG owner must be specified" in issues[0].message
+
     def test_dynamic_owner_value_skipped(self):
         """Test that a non-literal owner value is skipped, not flagged."""
         code = """
