@@ -7,12 +7,8 @@ from typing import Any, Dict, List, Optional
 from daglint.models import LintIssue
 
 
-class DagDefinition:
-    """A DAG defined either as a DAG(...) call or an @dag-decorated function.
-
-    Normalizes the two forms so rules can read DAG arguments and the
-    effective DAG ID without caring how the DAG was declared.
-    """
+class _AirflowDefinition:
+    """Base for normalized DAG/task definitions (call or decorator form)."""
 
     def __init__(
         self,
@@ -20,11 +16,11 @@ class DagDefinition:
         function_name: Optional[str] = None,
         position: Optional[ast.expr] = None,
     ):
-        """Initialize a DAG definition.
+        """Initialize a definition.
 
         Args:
-            call: The DAG(...) call or @dag(...) decorator call; None for a
-                bare @dag decorator
+            call: The instantiation call or decorator call; None for a
+                bare decorator
             function_name: Name of the decorated function (decorator form only)
             position: Node to report issues at; defaults to the call
         """
@@ -50,6 +46,14 @@ class DagDefinition:
                 return keyword.value
         return None
 
+
+class DagDefinition(_AirflowDefinition):
+    """A DAG defined either as a DAG(...) call or an @dag-decorated function.
+
+    Normalizes the two forms so rules can read DAG arguments and the
+    effective DAG ID without caring how the DAG was declared.
+    """
+
     @property
     def dag_id(self) -> Optional[str]:
         """Effective DAG ID: explicit argument, else the decorated function name.
@@ -65,6 +69,30 @@ class DagDefinition:
                     return first.value
                 return None
             value = self.get_kwarg("dag_id")
+            if value is not None:
+                if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                    return value.value
+                return None
+        return self.function_name
+
+
+class TaskDefinition(_AirflowDefinition):
+    """A task defined either as an *Operator(...) call or an @task-decorated function.
+
+    Normalizes the two forms so rules can read the effective task ID
+    without caring how the task was declared.
+    """
+
+    @property
+    def task_id(self) -> Optional[str]:
+        """Effective task ID: explicit task_id argument, else the decorated function name.
+
+        Returns None when a task_id argument is present but not a static
+        string — a dynamic ID overrides the function-name default in
+        Airflow, so nothing can be validated.
+        """
+        if self.call is not None:
+            value = self.get_kwarg("task_id")
             if value is not None:
                 if isinstance(value, ast.Constant) and isinstance(value.value, str):
                     return value.value
@@ -140,23 +168,6 @@ class BaseRule(ABC):
             return node.func.attr == "DAG"
         return False
 
-    def _extract_task_id(self, node: ast.Call) -> Optional[str]:
-        """Extract task_id from an operator call.
-
-        Args:
-            node: AST Call node representing an operator instantiation
-
-        Returns:
-            The task_id string if found, None otherwise
-        """
-        for keyword in node.keywords:
-            if keyword.arg == "task_id":
-                if isinstance(keyword.value, ast.Constant):
-                    value = keyword.value.value
-                    if isinstance(value, str):
-                        return value
-        return None
-
     def _is_dag_decorator(self, node: ast.expr) -> bool:
         """Check if a decorator node is an @dag decorator (bare or called).
 
@@ -195,6 +206,50 @@ class BaseRule(ABC):
                     if self._is_dag_decorator(decorator):
                         call = decorator if isinstance(decorator, ast.Call) else None
                         definitions.append(DagDefinition(call=call, function_name=node.name, position=decorator))
+                        break
+        return definitions
+
+    def _is_task_decorator(self, node: ast.expr) -> bool:
+        """Check if a decorator node is an @task decorator (bare, called, or flavored).
+
+        Matches @task, @task(...), flavors like @task.branch(...), and
+        module-qualified forms like @decorators.task(...).
+
+        Args:
+            node: Entry from a FunctionDef's decorator_list
+
+        Returns:
+            True if the decorator declares a TaskFlow task
+        """
+        target = node.func if isinstance(node, ast.Call) else node
+        while isinstance(target, ast.Attribute):
+            if target.attr == "task":
+                return True
+            target = target.value
+        return isinstance(target, ast.Name) and target.id == "task"
+
+    def _find_task_definitions(self, tree: ast.AST) -> List[TaskDefinition]:
+        """Find every task definition in a file.
+
+        Matches both declaration styles:
+            *Operator(...) instantiation calls
+            @task / @task(...) / @task.<flavor> decorated functions (TaskFlow API)
+
+        Args:
+            tree: Abstract syntax tree of the file
+
+        Returns:
+            List of normalized task definitions
+        """
+        definitions = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and self._is_operator_call(node):
+                definitions.append(TaskDefinition(call=node))
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                for decorator in node.decorator_list:
+                    if self._is_task_decorator(decorator):
+                        call = decorator if isinstance(decorator, ast.Call) else None
+                        definitions.append(TaskDefinition(call=call, function_name=node.name, position=decorator))
                         break
         return definitions
 

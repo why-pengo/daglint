@@ -11,7 +11,16 @@ def InvalidTaskflowDAG():
     def DoThing():
         return 1
 
+    @task(task_id='duplicate_id')
+    def first():
+        return 1
+
+    @task(task_id='duplicate_id')
+    def second():
+        return 2
+
     DoThing()
+    second(first())
 
 
 InvalidTaskflowDAG()

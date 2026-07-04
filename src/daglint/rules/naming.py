@@ -53,19 +53,16 @@ class TaskIDConventionRule(BaseRule):
         issues = []
         pattern = self.config.get("pattern", r"^[a-z][a-z0-9_]*$")
 
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                # Check if this is an operator instantiation
-                if self._is_operator_call(node):
-                    task_id = self._extract_task_id(node)
-                    if task_id and not re.match(pattern, task_id):
-                        issues.append(
-                            self.create_issue(
-                                f"Task ID '{task_id}' does not match pattern '{pattern}'",
-                                file_path,
-                                node.lineno,
-                                node.col_offset,
-                            )
-                        )
+        for definition in self._find_task_definitions(tree):
+            task_id = definition.task_id
+            if task_id and not re.match(pattern, task_id):
+                issues.append(
+                    self.create_issue(
+                        f"Task ID '{task_id}' does not match pattern '{pattern}'",
+                        file_path,
+                        definition.lineno,
+                        definition.col_offset,
+                    )
+                )
 
         return issues
