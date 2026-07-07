@@ -23,8 +23,14 @@ class Config:
         Raises:
             ConfigError: If the configuration contains invalid values
         """
+        if config_dict is not None and not isinstance(config_dict, dict):
+            raise ConfigError("Configuration must be a mapping of settings")
         self.config = config_dict or self._default_config()
-        self.rules_config = self.config.get("rules", {})
+
+        rules = self.config.get("rules") or {}
+        if not isinstance(rules, dict):
+            raise ConfigError("'rules' must be a mapping of rule names to their settings")
+        self.rules_config = rules
         self._validate()
 
     def _validate(self) -> None:
@@ -34,8 +40,12 @@ class Config:
             raise ConfigError("'exclude' must be a list of directory-name patterns")
 
         for rule_id, rule_config in self.rules_config.items():
+            if rule_config is None:
+                self.rules_config[rule_id] = rule_config = {}
             if not isinstance(rule_config, dict):
-                continue
+                raise ConfigError(
+                    f"Configuration for rule '{rule_id}' must be a mapping of settings, " f"got {type(rule_config).__name__}"
+                )
             severity = rule_config.get("severity")
             if severity is not None and severity not in VALID_SEVERITIES:
                 raise ConfigError(

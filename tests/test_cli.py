@@ -489,6 +489,51 @@ def test_check_invalid_severity_in_config_is_usage_error():
     assert "error, warning, info" in result.output
 
 
+def test_check_non_mapping_rule_config_is_usage_error():
+    """rules: {rule: true} must fail validation, not crash later with a TypeError."""
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        dag_file = Path(tmpdir) / "my_dag.py"
+        dag_file.write_text(CLEAN_DAG)
+        config_file = Path(tmpdir) / "config.yaml"
+        config_file.write_text("rules:\n  dag_id_convention: true\n")
+
+        result = runner.invoke(cli, ["check", str(dag_file), "--config", str(config_file)])
+
+    assert result.exit_code == 2
+    assert "dag_id_convention" in result.output
+    assert "must be a mapping" in result.output
+
+
+def test_check_non_mapping_rules_section_is_usage_error():
+    """A rules: section that is not a mapping must fail with a clear message."""
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        dag_file = Path(tmpdir) / "my_dag.py"
+        dag_file.write_text(CLEAN_DAG)
+        config_file = Path(tmpdir) / "config.yaml"
+        config_file.write_text("rules:\n  - dag_id_convention\n")
+
+        result = runner.invoke(cli, ["check", str(dag_file), "--config", str(config_file)])
+
+    assert result.exit_code == 2
+    assert "'rules' must be a mapping" in result.output
+
+
+def test_check_empty_rule_entry_is_tolerated():
+    """A bare `rule_id:` entry (YAML null) means 'use defaults', not an error."""
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        dag_file = Path(tmpdir) / "my_dag.py"
+        dag_file.write_text(CLEAN_DAG)
+        config_file = Path(tmpdir) / "config.yaml"
+        config_file.write_text("rules:\n  dag_id_convention:\n")
+
+        result = runner.invoke(cli, ["check", str(dag_file), "--config", str(config_file)])
+
+    assert result.exit_code == 0
+
+
 def test_check_invalid_exclude_type_is_usage_error():
     """exclude: must be a list of strings, not a scalar."""
     runner = CliRunner()

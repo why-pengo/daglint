@@ -95,19 +95,30 @@ dag = DAG('my_dag'
         assert issues[0].rule_id == "syntax_error"
 
 
-def test_lint_error_always_reported():
-    """A file that crashes the linter must report lint_error, not pass silently (#40)."""
+class _ExplodingRule:
+    """A rule whose check always crashes, regardless of the file's content."""
+
+    def check(self, tree, file_path, source_code):
+        raise RuntimeError("boom")
+
+
+def _lint_with_exploding_rule(verbose: bool):
+    """Lint a valid file with only an exploding rule loaded."""
     code = "from airflow import DAG\ndag = DAG('valid_dag')"
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
         f.write(code)
     try:
-        config = Config.default()
-        linter = DAGLinter(config)
-        linter.rules[0].check = _raise_runtime_error
-        issues = linter.lint_file(f.name)
+        linter = DAGLinter(Config.default(), verbose=verbose)
+        linter.rules = [_ExplodingRule()]
+        return linter.lint_file(f.name)
     finally:
         Path(f.name).unlink()
+
+
+def test_lint_error_always_reported():
+    """A file that crashes the linter must report lint_error, not pass silently (#40)."""
+    issues = _lint_with_exploding_rule(verbose=False)
 
     assert len(issues) == 1
     assert issues[0].rule_id == "lint_error"
@@ -118,25 +129,11 @@ def test_lint_error_always_reported():
 
 def test_lint_error_verbose_includes_exception_type():
     """--verbose enriches the lint_error message with the exception type (#40)."""
-    code = "from airflow import DAG\ndag = DAG('valid_dag')"
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-        f.write(code)
-    try:
-        config = Config.default()
-        linter = DAGLinter(config, verbose=True)
-        linter.rules[0].check = _raise_runtime_error
-        issues = linter.lint_file(f.name)
-    finally:
-        Path(f.name).unlink()
+    issues = _lint_with_exploding_rule(verbose=True)
 
     assert len(issues) == 1
     assert issues[0].rule_id == "lint_error"
     assert "RuntimeError: boom" in issues[0].message
-
-
-def _raise_runtime_error(*args, **kwargs):
-    raise RuntimeError("boom")
 
 
 def test_linter_with_custom_config():
