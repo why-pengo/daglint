@@ -339,6 +339,26 @@ class BaseRule(ABC):
             target = target.value
         return isinstance(target, ast.Name) and target.id == "task"
 
+    def _is_setup_teardown_decorator(self, node: ast.expr) -> bool:
+        """Check if a decorator node is @setup or @teardown (bare or called).
+
+        Both decorators turn a plain function into a TaskFlow task whose
+        task_id is the function name — neither accepts a task_id (#54).
+
+        Args:
+            node: Entry from a FunctionDef's decorator_list
+
+        Returns:
+            True if the decorator is @setup, @teardown, @teardown(...),
+            or a module-qualified form of either
+        """
+        target = node.func if isinstance(node, ast.Call) else node
+        if isinstance(target, ast.Name):
+            return target.id in ("setup", "teardown")
+        elif isinstance(target, ast.Attribute):
+            return target.attr in ("setup", "teardown")
+        return False
+
     def _is_task_group_call(self, node: ast.Call) -> bool:
         """Check if a call is a TaskGroup instantiation.
 
@@ -403,6 +423,7 @@ class BaseRule(ABC):
             *Operator(...) instantiation calls
             *Operator.partial(task_id=...) dynamic-mapping definitions (#52)
             @task / @task(...) / @task.<flavor> decorated functions (TaskFlow API)
+            @setup / @teardown decorated functions (#54)
             <task>.override(task_id=...) re-identification call sites (#53)
 
         `.expand(...)` / `.expand_kwargs(...)` calls and TaskFlow
@@ -482,18 +503,31 @@ class BaseRule(ABC):
             definitions: Accumulator for found task definitions
         """
         body_prefix = prefix
+        group_decorator = None
+        task_decorator = None
+        setup_teardown_decorator = None
         for decorator in node.decorator_list:
-            if self._is_task_group_decorator(decorator):
-                call = decorator if isinstance(decorator, ast.Call) else None
-                group = TaskGroupDefinition(call=call, function_name=node.name, position=decorator)
-                segment = self._group_segment(group)
-                if segment is not None:
-                    body_prefix = body_prefix + (segment,)
-                break
-            if self._is_task_decorator(decorator):
-                call = decorator if isinstance(decorator, ast.Call) else None
-                definitions.append(TaskDefinition(call=call, function_name=node.name, position=decorator, group_prefix=prefix))
-                break
+            if group_decorator is None and self._is_task_group_decorator(decorator):
+                group_decorator = decorator
+            elif task_decorator is None and self._is_task_decorator(decorator):
+                task_decorator = decorator
+            elif setup_teardown_decorator is None and self._is_setup_teardown_decorator(decorator):
+                setup_teardown_decorator = decorator
+
+        if group_decorator is not None:
+            call = group_decorator if isinstance(group_decorator, ast.Call) else None
+            group = TaskGroupDefinition(call=call, function_name=node.name, position=group_decorator)
+            segment = self._group_segment(group)
+            if segment is not None:
+                body_prefix = body_prefix + (segment,)
+        else:
+            # In stacked forms like @setup over @task(task_id=...), the
+            # @task decorator carries the kwargs, so it wins the record.
+            marker = task_decorator if task_decorator is not None else setup_teardown_decorator
+            if marker is not None:
+                call = marker if isinstance(marker, ast.Call) else None
+                definitions.append(TaskDefinition(call=call, function_name=node.name, position=marker, group_prefix=prefix))
+
         for child in ast.iter_child_nodes(node):
             child_prefix = body_prefix if child in node.body else prefix
             self._collect_task_definitions(child, child_prefix, definitions)
