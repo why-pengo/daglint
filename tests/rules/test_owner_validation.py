@@ -58,8 +58,20 @@ default_args = {
         assert len(issues) == 1
         assert "DAG owner must be specified" in issues[0].message
 
-    def test_valid_owner_no_validation_list(self):
-        """Test that any owner passes when no valid_owners list is provided."""
+    def test_valid_owner_empty_validation_list(self):
+        """Test that any owner passes when valid_owners is explicitly empty."""
+        code = """
+default_args = {
+    'owner': 'any-team'
+}
+"""
+        tree = ast.parse(code)
+        rule = OwnerValidationRule({"valid_owners": []})
+        issues = rule.check(tree, "test.py", code)
+        assert len(issues) == 0
+
+    def test_default_valid_owners_enforced_without_config(self):
+        """Owners are checked against the default config list when unconfigured (#50)."""
         code = """
 default_args = {
     'owner': 'any-team'
@@ -68,7 +80,8 @@ default_args = {
         tree = ast.parse(code)
         rule = OwnerValidationRule({})
         issues = rule.check(tree, "test.py", code)
-        assert len(issues) == 0
+        assert len(issues) == 1
+        assert "Invalid owner 'any-team'" in issues[0].message
 
     def test_non_default_args_dicts_ignored(self):
         """Test that dicts other than default_args are not inspected at all."""

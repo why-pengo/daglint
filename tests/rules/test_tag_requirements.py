@@ -73,15 +73,15 @@ dag = DAG('my_dag', tags=[])
         assert len(issues) == 1
         assert "Missing required tags" in issues[0].message
 
-    def test_no_required_tags_configured(self):
-        """Test that no issues are raised when no required tags are configured."""
+    def test_empty_required_tags_configured(self):
+        """Test that no issues are raised when required_tags is explicitly empty."""
         code = """
 from airflow import DAG
 
 dag = DAG('my_dag')
 """
         tree = ast.parse(code)
-        rule = TagRequirementsRule({})
+        rule = TagRequirementsRule({"required_tags": []})
         issues = rule.check(tree, "test.py", code)
         assert len(issues) == 0
 

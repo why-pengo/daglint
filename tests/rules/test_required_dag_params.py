@@ -108,7 +108,7 @@ default_args = {
         assert len(issues) == 0
 
     def test_default_required_params(self):
-        """Test that default required params are used when none configured."""
+        """Test that the default config's required params are used when none configured (#50)."""
         code = """
 default_args = {
     'retries': 3
@@ -118,9 +118,7 @@ default_args = {
         rule = RequiredDAGParamsRule({})
         issues = rule.check(tree, "test.py", code)
         assert len(issues) == 1
-        assert "Missing required parameters" in issues[0].message
-        # Default params include owner, start_date, description
-        assert any(param in issues[0].message for param in ["owner", "start_date", "description"])
+        assert "Missing required parameters in default_args: owner, start_date" in issues[0].message
 
     def test_multiple_default_args(self):
         """Test that only the variable named 'default_args' is validated."""

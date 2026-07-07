@@ -20,7 +20,7 @@ class RequiredDAGParamsRule(BaseRule):
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
-        required_params = self.config.get("required_params", ["owner", "start_date", "description"])
+        required_params = self.config["required_params"]
 
         for node in self._find_default_args_dicts(tree):
             present_params = self._extract_dict_keys(node)

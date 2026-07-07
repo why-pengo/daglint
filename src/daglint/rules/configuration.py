@@ -20,8 +20,8 @@ class RetryConfigurationRule(BaseRule):
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
-        min_retries = self.config.get("min_retries", 1)
-        max_retries = self.config.get("max_retries", 5)
+        min_retries = self.config["min_retries"]
+        max_retries = self.config["max_retries"]
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Dict):
@@ -70,7 +70,7 @@ class CatchupValidationRule(BaseRule):
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
-        default_catchup = self.config.get("default_catchup", False)
+        default_catchup = self.config["default_catchup"]
 
         for definition in self._find_dag_definitions(tree):
             catchup_value = self._extract_catchup(definition.get_kwarg("catchup"))
@@ -106,7 +106,7 @@ class ScheduleValidationRule(BaseRule):
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
-        allow_none = self.config.get("allow_none", False)
+        allow_none = self.config["allow_none"]
 
         for definition in self._find_dag_definitions(tree):
             schedule_value = definition.get_kwarg("schedule_interval") or definition.get_kwarg("schedule")

@@ -4,6 +4,7 @@ import ast
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
+from daglint.config import Config
 from daglint.models import LintIssue
 
 
@@ -107,9 +108,12 @@ class BaseRule(ABC):
         """Initialize the rule.
 
         Args:
-            config: Rule-specific configuration
+            config: Rule-specific configuration. Keys not provided fall
+                back to the rule's entry in the default config, so the
+                default config is the single source of truth for
+                default values (#50).
         """
-        self.config = config or {}
+        self.config = {**Config.default_rule_config(self.rule_id), **(config or {})}
         self.severity = self.config.get("severity", "error")
 
     @property

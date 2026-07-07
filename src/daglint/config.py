@@ -79,6 +79,19 @@ class Config:
             }
         }
 
+    @staticmethod
+    def default_rule_config(rule_id: str) -> Dict[str, Any]:
+        """Get the default configuration for a single rule.
+
+        Args:
+            rule_id: Rule identifier
+
+        Returns:
+            The rule's default configuration, or an empty dict for
+            rules not in the default config
+        """
+        return dict(Config._default_config()["rules"].get(rule_id, {}))
+
     @classmethod
     def default(cls) -> "Config":
         """Create a default configuration."""
