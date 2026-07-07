@@ -37,6 +37,11 @@ class Config:
                     "pattern": r"^[a-z][a-z0-9_]*$",
                     "severity": "error",
                 },
+                "group_id_convention": {
+                    "enabled": True,
+                    "pattern": r"^[a-z][a-z0-9_]*$",
+                    "severity": "error",
+                },
                 "retry_configuration": {
                     "enabled": True,
                     "min_retries": 1,

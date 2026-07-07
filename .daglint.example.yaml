@@ -17,6 +17,11 @@ rules:
     pattern: "^[a-z][a-z0-9_]*$"
     severity: error
 
+  group_id_convention:
+    enabled: true
+    pattern: "^[a-z][a-z0-9_]*$"
+    severity: error
+
   retry_configuration:
     enabled: true
     min_retries: 1

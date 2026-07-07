@@ -15,7 +15,7 @@ from daglint.rules.metadata import (
     RequiredDAGParamsRule,
     TagRequirementsRule,
 )
-from daglint.rules.naming import DAGIDConventionRule, TaskIDConventionRule
+from daglint.rules.naming import DAGIDConventionRule, GroupIDConventionRule, TaskIDConventionRule
 from daglint.rules.validation import NoDuplicateTaskIDsRule
 
 # Registry of all available rules
@@ -24,6 +24,7 @@ AVAILABLE_RULES: Dict[str, Type[BaseRule]] = {
     "doc_md_validation": DocMdValidationRule,
     "owner_validation": OwnerValidationRule,
     "task_id_convention": TaskIDConventionRule,
+    "group_id_convention": GroupIDConventionRule,
     "retry_configuration": RetryConfigurationRule,
     "tag_requirements": TagRequirementsRule,
     "no_duplicate_task_ids": NoDuplicateTaskIDsRule,
@@ -38,6 +39,7 @@ __all__ = [
     "DocMdValidationRule",
     "OwnerValidationRule",
     "TaskIDConventionRule",
+    "GroupIDConventionRule",
     "RetryConfigurationRule",
     "TagRequirementsRule",
     "NoDuplicateTaskIDsRule",

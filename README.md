@@ -10,11 +10,12 @@ A linting tool for Apache Airflow DAG files. Uses Python's AST to enforce standa
 |------|-------------|
 | `dag_id_convention` | Enforces snake_case naming for DAG IDs |
 | `task_id_convention` | Enforces snake_case naming for task IDs |
+| `group_id_convention` | Enforces snake_case naming for task group IDs |
 | `owner_validation` | Validates DAG owners against an approved list |
 | `tag_requirements` | Validates required tags are present |
 | `required_dag_params` | Ensures required `default_args` keys are set |
 | `retry_configuration` | Checks retry values are within configured limits |
-| `no_duplicate_task_ids` | Prevents duplicate task IDs within a DAG |
+| `no_duplicate_task_ids` | Prevents duplicate task IDs within a DAG (task-group aware: `group.task` paths) |
 | `max_active_runs_validation` | Ensures `max_active_runs` is explicitly set |
 | `catchup_validation` | Checks `catchup` is explicitly set |
 | `schedule_validation` | Ensures `schedule_interval` / `schedule` is set |
@@ -132,7 +133,7 @@ src/daglint/
   rules/
     base.py           # BaseRule ABC
     __init__.py       # AVAILABLE_RULES registry
-    naming.py         # dag_id_convention, task_id_convention
+    naming.py         # dag_id_convention, task_id_convention, group_id_convention
     configuration.py  # retry_configuration, schedule_validation, catchup_validation
     validation.py     # no_duplicate_task_ids
     metadata/         # owner_validation, tag_requirements, required_dag_params,
