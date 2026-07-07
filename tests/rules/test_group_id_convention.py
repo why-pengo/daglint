@@ -97,6 +97,26 @@ def BadGroupName():
         issues = rule.check(tree, "test.py", code)
         assert len(issues) == 0
 
+    def test_taskflow_positional_argument_is_ignored(self):
+        """A positional argument on @task_group(...) is NOT a group_id.
+
+        Airflow's runtime binds the first positional to python_callable
+        and silently drops non-callables (both 2.x and 3.x), so the
+        effective group ID is the function name — only the type-stub
+        overloads suggest otherwise.
+        """
+        code = """
+from airflow.decorators import task_group
+
+@task_group("IgnoredPositional")
+def good_name():
+    pass
+"""
+        tree = ast.parse(code)
+        rule = GroupIDConventionRule()
+        issues = rule.check(tree, "test.py", code)
+        assert len(issues) == 0
+
     def test_dynamic_group_id_skipped(self):
         """A non-literal group ID cannot be validated and is skipped."""
         code = """

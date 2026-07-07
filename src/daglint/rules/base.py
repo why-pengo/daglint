@@ -150,6 +150,10 @@ class TaskGroupDefinition(_AirflowDefinition):
         """
         if self.call is not None:
             value = self.get_kwarg("group_id")
+            # Positional group_id exists only on TaskGroup(...) calls. In the
+            # @task_group(...) decorator form the first positional binds to
+            # python_callable and Airflow drops non-callables at runtime, so
+            # the group ID stays the function name.
             if value is None and self.function_name is None and self.call.args:
                 value = self.call.args[0]
             if value is not None:
