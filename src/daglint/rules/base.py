@@ -219,6 +219,30 @@ class BaseRule(ABC):
             return node.func.attr.endswith("Operator")
         return False
 
+    def _is_operator_partial_call(self, node: ast.Call) -> bool:
+        """Check if a call is a dynamic-mapping Operator.partial(...) definition.
+
+        In Airflow's dynamic task mapping, `<X>Operator.partial(task_id=...)`
+        is the task definition site — it carries the constructor kwargs —
+        while the chained `.expand(...)` only supplies mapped arguments (#52).
+        TaskFlow `.partial()` calls (on decorated functions, not Operator
+        classes) are call sites of an existing definition and do not match.
+
+        Args:
+            node: AST Call node to check
+
+        Returns:
+            True if the call is an Operator.partial(...) definition
+        """
+        if not (isinstance(node.func, ast.Attribute) and node.func.attr == "partial"):
+            return False
+        target = node.func.value
+        if isinstance(target, ast.Name):
+            return target.id.endswith("Operator")
+        elif isinstance(target, ast.Attribute):
+            return target.attr.endswith("Operator")
+        return False
+
     def _is_dag_call(self, node: ast.Call) -> bool:
         """Check if a call is a DAG instantiation.
 
@@ -354,9 +378,14 @@ class BaseRule(ABC):
     def _find_task_definitions(self, tree: ast.AST) -> List[TaskDefinition]:
         """Find every task definition in a file.
 
-        Matches both declaration styles:
+        Matches all declaration styles:
             *Operator(...) instantiation calls
+            *Operator.partial(task_id=...) dynamic-mapping definitions (#52)
             @task / @task(...) / @task.<flavor> decorated functions (TaskFlow API)
+
+        `.expand(...)` / `.expand_kwargs(...)` calls and TaskFlow
+        `.partial()` calls are call sites of an existing definition,
+        never a second definition.
 
         Tasks lexically nested in `with TaskGroup(...)` blocks or
         @task_group-decorated functions carry the enclosing group IDs
@@ -387,7 +416,7 @@ class BaseRule(ABC):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             self._collect_from_function(node, prefix, definitions)
             return
-        if isinstance(node, ast.Call) and self._is_operator_call(node):
+        if isinstance(node, ast.Call) and (self._is_operator_call(node) or self._is_operator_partial_call(node)):
             definitions.append(TaskDefinition(call=node, group_prefix=prefix))
         for child in ast.iter_child_nodes(node):
             self._collect_task_definitions(child, prefix, definitions)
