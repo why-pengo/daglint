@@ -2,18 +2,22 @@
 
 import json
 import sys
+from fnmatch import fnmatch
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 import click
 from colorama import Fore, Style, init
 
-from daglint.config import Config
+from daglint.config import Config, ConfigError
 from daglint.linter import DAGLinter
 from daglint.models import LintIssue
 from daglint.rules import AVAILABLE_RULES
 
 FileResults = List[Tuple[Path, List[LintIssue]]]
+
+# Directory names never scanned by default; hidden directories are also skipped.
+DEFAULT_EXCLUDE_DIRS = ("venv", "env", "build", "dist", "site-packages")
 
 # Initialize colorama for cross-platform colored output
 init(autoreset=True)
@@ -28,22 +32,39 @@ def cli():
 
 def _load_config(config_path: Optional[str]) -> Config:
     """Load configuration from file or use default."""
-    if config_path:
-        return Config.from_file(config_path)
+    try:
+        if config_path:
+            return Config.from_file(config_path)
 
-    # Look for .daglint.yaml in current directory
-    default_config = Path(".daglint.yaml")
-    if default_config.exists():
-        return Config.from_file(str(default_config))
+        # Look for .daglint.yaml in current directory
+        default_config = Path(".daglint.yaml")
+        if default_config.exists():
+            return Config.from_file(str(default_config))
 
-    return Config.default()
+        return Config.default()
+    except ConfigError as e:
+        raise click.UsageError(str(e))
 
 
-def _collect_files(target_path: Path) -> list:
-    """Collect Python files to lint."""
+def _is_excluded(relative_parts: Tuple[str, ...], exclude_patterns: Iterable[str]) -> bool:
+    """Check whether any directory component is hidden or matches an exclude pattern."""
+    return any(part.startswith(".") or any(fnmatch(part, pattern) for pattern in exclude_patterns) for part in relative_parts)
+
+
+def _collect_files(target_path: Path, excludes: Iterable[str] = ()) -> list:
+    """Collect Python files to lint.
+
+    An explicitly named file is always linted; directory scans skip hidden
+    directories, DEFAULT_EXCLUDE_DIRS, and any extra exclude patterns.
+    """
     if target_path.is_file():
         return [target_path]
-    return list(target_path.rglob("*.py"))
+    exclude_patterns = list(DEFAULT_EXCLUDE_DIRS) + list(excludes)
+    return [
+        py_file
+        for py_file in sorted(target_path.rglob("*.py"))
+        if not _is_excluded(py_file.relative_to(target_path).parts[:-1], exclude_patterns)
+    ]
 
 
 def _severity_counts(issues: List[LintIssue]) -> dict:
@@ -162,6 +183,13 @@ def _render_github(results: FileResults):
     help="Output format: colorized text, a JSON envelope, or GitHub Actions annotations",
 )
 @click.option("--strict", is_flag=True, help="Exit non-zero on any issue, not just errors")
+@click.option(
+    "--exclude",
+    "-e",
+    "excludes",
+    multiple=True,
+    help="Directory-name pattern to skip when scanning (repeatable; adds to the defaults)",
+)
 def check(
     path: str,
     config: Optional[str],
@@ -169,6 +197,7 @@ def check(
     verbose: bool,
     output_format: str,
     strict: bool,
+    excludes: Tuple[str, ...],
 ):
     """Check DAG files for linting issues.
 
@@ -197,8 +226,8 @@ def check(
             )
         cfg.set_active_rules(rule_list, all_rule_ids=list(AVAILABLE_RULES))
 
-    # Collect files to lint
-    files_to_check = _collect_files(target_path)
+    # Collect files to lint (config excludes and CLI excludes are additive)
+    files_to_check = _collect_files(target_path, cfg.excludes + list(excludes))
 
     if not files_to_check and output_format == "text":
         click.echo(f"{Fore.YELLOW}No Python files found to check.{Style.RESET_ALL}")

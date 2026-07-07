@@ -4,6 +4,12 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
+VALID_SEVERITIES = ("error", "warning", "info")
+
+
+class ConfigError(ValueError):
+    """Raised when a configuration file contains invalid values."""
+
 
 class Config:
     """Configuration for DAGLint."""
@@ -13,9 +19,34 @@ class Config:
 
         Args:
             config_dict: Configuration dictionary
+
+        Raises:
+            ConfigError: If the configuration contains invalid values
         """
         self.config = config_dict or self._default_config()
         self.rules_config = self.config.get("rules", {})
+        self._validate()
+
+    def _validate(self) -> None:
+        """Validate configuration values, failing fast with a clear message."""
+        excludes = self.config.get("exclude", [])
+        if not isinstance(excludes, list) or not all(isinstance(p, str) for p in excludes):
+            raise ConfigError("'exclude' must be a list of directory-name patterns")
+
+        for rule_id, rule_config in self.rules_config.items():
+            if not isinstance(rule_config, dict):
+                continue
+            severity = rule_config.get("severity")
+            if severity is not None and severity not in VALID_SEVERITIES:
+                raise ConfigError(
+                    f"Invalid severity '{severity}' for rule '{rule_id}'. "
+                    f"Valid severities are: {', '.join(VALID_SEVERITIES)}"
+                )
+
+    @property
+    def excludes(self) -> List[str]:
+        """Directory-name patterns to exclude, on top of the built-in defaults."""
+        return list(self.config.get("exclude", []))
 
     @staticmethod
     def _default_config() -> Dict[str, Any]:

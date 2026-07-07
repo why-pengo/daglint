@@ -399,6 +399,111 @@ def test_check_format_json_empty_directory():
     assert payload["summary"]["files_checked"] == 0
 
 
+def _files_checked(runner_result):
+    """Extract summary.files_checked from a --format json run."""
+    return json.loads(runner_result.output)["summary"]["files_checked"]
+
+
+def test_check_directory_skips_default_excludes():
+    """Directory scans skip virtualenvs and hidden directories by default (#40)."""
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        (Path(tmpdir) / "good.py").write_text(CLEAN_DAG)
+        for excluded in (".venv/lib", "venv", ".hidden", "build"):
+            bad_dir = Path(tmpdir) / excluded
+            bad_dir.mkdir(parents=True)
+            (bad_dir / "bad.py").write_text(ERROR_DAG)
+
+        result = runner.invoke(cli, ["check", tmpdir, "--format", "json"])
+
+    assert result.exit_code == 0
+    assert _files_checked(result) == 1
+
+
+def test_check_exclude_flag_extends_defaults():
+    """--exclude adds patterns on top of the defaults, repeatably (#40)."""
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        (Path(tmpdir) / "good.py").write_text(CLEAN_DAG)
+        for custom in ("generated", "fixtures", "venv"):
+            bad_dir = Path(tmpdir) / custom
+            bad_dir.mkdir()
+            (bad_dir / "bad.py").write_text(ERROR_DAG)
+
+        unfiltered = runner.invoke(cli, ["check", tmpdir, "--format", "json"])
+        filtered = runner.invoke(
+            cli,
+            ["check", tmpdir, "--format", "json", "--exclude", "generated", "--exclude", "fixtures"],
+        )
+
+    assert _files_checked(unfiltered) == 3  # venv already excluded by default
+    assert filtered.exit_code == 0
+    assert _files_checked(filtered) == 1
+
+
+def test_check_config_exclude_extends_defaults():
+    """An exclude: list in .daglint.yaml adds to the defaults (#40)."""
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        (Path(tmpdir) / "good.py").write_text(CLEAN_DAG)
+        bad_dir = Path(tmpdir) / "generated"
+        bad_dir.mkdir()
+        (bad_dir / "bad.py").write_text(ERROR_DAG)
+        config_file = Path(tmpdir) / "config.yaml"
+        config_file.write_text("exclude:\n  - generated\n")
+
+        result = runner.invoke(cli, ["check", tmpdir, "--config", str(config_file), "--format", "json"])
+
+    assert result.exit_code == 0
+    assert _files_checked(result) == 1
+
+
+def test_check_explicit_file_bypasses_excludes():
+    """A file named directly on the command line is always linted."""
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        bad_dir = Path(tmpdir) / "venv"
+        bad_dir.mkdir()
+        bad_file = bad_dir / "bad.py"
+        bad_file.write_text(ERROR_DAG)
+
+        result = runner.invoke(cli, ["check", str(bad_file)])
+
+    assert result.exit_code == 1
+
+
+def test_check_invalid_severity_in_config_is_usage_error():
+    """severity: banana in the config must fail fast with a clear message (#40)."""
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        dag_file = Path(tmpdir) / "my_dag.py"
+        dag_file.write_text(CLEAN_DAG)
+        config_file = Path(tmpdir) / "config.yaml"
+        config_file.write_text("rules:\n  dag_id_convention:\n    severity: banana\n")
+
+        result = runner.invoke(cli, ["check", str(dag_file), "--config", str(config_file)])
+
+    assert result.exit_code == 2
+    assert "banana" in result.output
+    assert "dag_id_convention" in result.output
+    assert "error, warning, info" in result.output
+
+
+def test_check_invalid_exclude_type_is_usage_error():
+    """exclude: must be a list of strings, not a scalar."""
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        dag_file = Path(tmpdir) / "my_dag.py"
+        dag_file.write_text(CLEAN_DAG)
+        config_file = Path(tmpdir) / "config.yaml"
+        config_file.write_text("exclude: generated\n")
+
+        result = runner.invoke(cli, ["check", str(dag_file), "--config", str(config_file)])
+
+    assert result.exit_code == 2
+    assert "'exclude' must be a list" in result.output
+
+
 def test_check_help_does_not_advertise_fix():
     """--fix is gone for good (autofix is out of scope); help must not mention it (#35)."""
     runner = CliRunner()

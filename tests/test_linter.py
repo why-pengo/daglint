@@ -95,22 +95,48 @@ dag = DAG('my_dag'
         assert issues[0].rule_id == "syntax_error"
 
 
-def test_lint_directory():
-    """Test linting a directory of DAG files."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Create test files
-        file1 = Path(tmpdir) / "dag1.py"
-        file1.write_text("from airflow import DAG\ndag = DAG('valid_dag')")
+def test_lint_error_always_reported():
+    """A file that crashes the linter must report lint_error, not pass silently (#40)."""
+    code = "from airflow import DAG\ndag = DAG('valid_dag')"
 
-        file2 = Path(tmpdir) / "dag2.py"
-        file2.write_text("from airflow import DAG\ndag = DAG('InvalidDAG')")
-
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        f.write(code)
+    try:
         config = Config.default()
         linter = DAGLinter(config)
-        results = linter.lint_directory(tmpdir)
+        linter.rules[0].check = _raise_runtime_error
+        issues = linter.lint_file(f.name)
+    finally:
+        Path(f.name).unlink()
 
-        # Should have issues for at least one file
-        assert len(results) >= 1
+    assert len(issues) == 1
+    assert issues[0].rule_id == "lint_error"
+    assert issues[0].severity == "error"
+    assert "boom" in issues[0].message
+    assert "RuntimeError" not in issues[0].message  # detail is verbose-only
+
+
+def test_lint_error_verbose_includes_exception_type():
+    """--verbose enriches the lint_error message with the exception type (#40)."""
+    code = "from airflow import DAG\ndag = DAG('valid_dag')"
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        f.write(code)
+    try:
+        config = Config.default()
+        linter = DAGLinter(config, verbose=True)
+        linter.rules[0].check = _raise_runtime_error
+        issues = linter.lint_file(f.name)
+    finally:
+        Path(f.name).unlink()
+
+    assert len(issues) == 1
+    assert issues[0].rule_id == "lint_error"
+    assert "RuntimeError: boom" in issues[0].message
+
+
+def _raise_runtime_error(*args, **kwargs):
+    raise RuntimeError("boom")
 
 
 def test_linter_with_custom_config():

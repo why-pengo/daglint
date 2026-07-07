@@ -10,9 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `--format [text|json|github]` option on `daglint check`: `json` emits a machine-readable envelope (`issues` list plus a `summary` block), `github` emits GitHub Actions workflow commands so issues appear as inline PR annotations (#39).
 - `--strict` flag: exit non-zero on any issue, not just errors (#39).
+- Directory scans now skip hidden directories and common non-source dirs (`venv/`, `env/`, `build/`, `dist/`, `site-packages/`) by default; extend with an `exclude:` list in `.daglint.yaml` or the repeatable `--exclude` flag (#40).
+- Severity values in `.daglint.yaml` are validated on load; anything other than `error`/`warning`/`info` fails fast with a clear message (#40).
 
 ### Changed
 - **Breaking for CI gating on warnings:** `daglint check` now exits 1 only when error-severity issues are found. Warning/info issues alone exit 0 unless `--strict` is passed. Exit code 2 means a usage error (#39).
+- A file that crashes the linter now always reports a `lint_error` issue (error severity) instead of silently passing without `--verbose`; verbose mode adds the exception type to the message (#40).
+
+### Removed
+- Unused `DAGLinter.lint_directory` method; the CLI is the single collection path (#40).
+- `requirements.txt`; runtime dependencies live in `pyproject.toml` only (#40).
 
 ## [0.6.1] - 2025-12-05
 

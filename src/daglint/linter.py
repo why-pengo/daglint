@@ -2,7 +2,6 @@
 
 import ast
 import inspect
-from pathlib import Path
 from typing import List
 
 from daglint.config import Config
@@ -74,34 +73,15 @@ class DAGLinter:
                 )
             )
         except Exception as e:
-            if self.verbose:
-                issues.append(
-                    LintIssue(
-                        rule_id="lint_error",
-                        message=f"Error linting file: {str(e)}",
-                        file_path=file_path,
-                        line=0,
-                        severity="error",
-                    )
+            detail = f"{type(e).__name__}: {e}" if self.verbose else str(e)
+            issues.append(
+                LintIssue(
+                    rule_id="lint_error",
+                    message=f"Error linting file: {detail}",
+                    file_path=file_path,
+                    line=0,
+                    severity="error",
                 )
+            )
 
         return sorted(issues, key=lambda x: x.line)
-
-    def lint_directory(self, dir_path: str) -> dict:
-        """Lint all Python files in a directory.
-
-        Args:
-            dir_path: Path to directory
-
-        Returns:
-            Dictionary mapping file paths to their issues
-        """
-        directory = Path(dir_path)
-        results = {}
-
-        for py_file in directory.rglob("*.py"):
-            issues = self.lint_file(str(py_file))
-            if issues:
-                results[str(py_file)] = issues
-
-        return results

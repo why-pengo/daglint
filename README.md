@@ -49,6 +49,9 @@ daglint check dags/ --format github
 # Fail on warnings too, not just errors
 daglint check dags/ --strict
 
+# Skip extra directories when scanning (adds to the built-in defaults)
+daglint check . --exclude generated --exclude fixtures
+
 # List all available rules
 daglint rules
 
@@ -154,6 +157,20 @@ rules:
     max_active_runs: 1
     severity: warning
 ```
+
+`severity` must be one of `error`, `warning`, or `info`; any other value fails at startup with exit code 2.
+
+### Excluding directories
+
+Directory scans always skip hidden directories (`.venv/`, `.tox/`, `.git/`, …) and these defaults: `venv/`, `env/`, `build/`, `dist/`, `site-packages/`. Add your own directory-name patterns on top — they are matched with shell-style globs against each directory name, anywhere in the tree:
+
+```yaml
+exclude:
+  - generated
+  - "*_fixtures"
+```
+
+The repeatable `--exclude` CLI flag is additive with both the defaults and the config list. A file named explicitly on the command line is always linted, regardless of excludes.
 
 ## Development
 
