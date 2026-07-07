@@ -20,7 +20,7 @@ class OwnerValidationRule(BaseRule):
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
-        valid_owners = self.config.get("valid_owners", [])
+        valid_owners = self.config["valid_owners"]
 
         for node in self._find_default_args_dicts(tree):
             has_owner_key, owner_value = self._extract_owner_from_dict(node)

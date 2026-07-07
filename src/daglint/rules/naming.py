@@ -21,7 +21,7 @@ class DAGIDConventionRule(BaseRule):
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
-        pattern = self.config.get("pattern", r"^[a-z][a-z0-9_]*$")
+        pattern = self.config["pattern"]
 
         for definition in self._find_dag_definitions(tree):
             dag_id = definition.dag_id
@@ -51,7 +51,7 @@ class TaskIDConventionRule(BaseRule):
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
-        pattern = self.config.get("pattern", r"^[a-z][a-z0-9_]*$")
+        pattern = self.config["pattern"]
 
         for definition in self._find_task_definitions(tree):
             task_id = definition.task_id

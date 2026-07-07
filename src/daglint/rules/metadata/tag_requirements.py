@@ -20,7 +20,7 @@ class TagRequirementsRule(BaseRule):
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues: list[LintIssue] = []
-        required_tags = self.config.get("required_tags", [])
+        required_tags = self.config["required_tags"]
 
         if not required_tags:
             return issues

@@ -20,7 +20,7 @@ class MaxActiveRunsValidationRule(BaseRule):
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
-        expected_max_active_runs = self.config.get("max_active_runs", 1)
+        expected_max_active_runs = self.config["max_active_runs"]
 
         for definition in self._find_dag_definitions(tree):
             max_active_runs = self._extract_max_active_runs(definition.get_kwarg("max_active_runs"))
