@@ -243,6 +243,27 @@ class BaseRule(ABC):
             return target.attr.endswith("Operator")
         return False
 
+    def _is_task_override_call(self, node: ast.Call) -> bool:
+        """Check if a call re-identifies a TaskFlow task via .override(task_id=...).
+
+        `my_task.override(task_id="other_id")(...)` instantiates the task
+        under a new ID at the call site (#53). Only calls that pass a
+        task_id are re-identifications; .override(pool=...) and friends
+        do not change task identity and are ignored, as are chains on
+        call results (only Name/Attribute targets match).
+
+        Args:
+            node: AST Call node to check
+
+        Returns:
+            True if the call is a task_id-overriding .override(...) call
+        """
+        if not (isinstance(node.func, ast.Attribute) and node.func.attr == "override"):
+            return False
+        if not isinstance(node.func.value, (ast.Name, ast.Attribute)):
+            return False
+        return any(keyword.arg == "task_id" for keyword in node.keywords)
+
     def _is_dag_call(self, node: ast.Call) -> bool:
         """Check if a call is a DAG instantiation.
 
@@ -382,10 +403,12 @@ class BaseRule(ABC):
             *Operator(...) instantiation calls
             *Operator.partial(task_id=...) dynamic-mapping definitions (#52)
             @task / @task(...) / @task.<flavor> decorated functions (TaskFlow API)
+            <task>.override(task_id=...) re-identification call sites (#53)
 
         `.expand(...)` / `.expand_kwargs(...)` calls and TaskFlow
         `.partial()` calls are call sites of an existing definition,
-        never a second definition.
+        never a second definition. An .override(...) without task_id
+        does not change task identity and is likewise ignored.
 
         Tasks lexically nested in `with TaskGroup(...)` blocks or
         @task_group-decorated functions carry the enclosing group IDs
@@ -416,7 +439,9 @@ class BaseRule(ABC):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             self._collect_from_function(node, prefix, definitions)
             return
-        if isinstance(node, ast.Call) and (self._is_operator_call(node) or self._is_operator_partial_call(node)):
+        if isinstance(node, ast.Call) and (
+            self._is_operator_call(node) or self._is_operator_partial_call(node) or self._is_task_override_call(node)
+        ):
             definitions.append(TaskDefinition(call=node, group_prefix=prefix))
         for child in ast.iter_child_nodes(node):
             self._collect_task_definitions(child, prefix, definitions)
