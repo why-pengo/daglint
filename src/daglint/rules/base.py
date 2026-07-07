@@ -340,10 +340,14 @@ class BaseRule(ABC):
         return isinstance(target, ast.Name) and target.id == "task"
 
     def _is_setup_teardown_decorator(self, node: ast.expr) -> bool:
-        """Check if a decorator node is @setup or @teardown (bare or called).
+        """Check if a decorator node is @setup or @teardown.
 
         Both decorators turn a plain function into a TaskFlow task whose
         task_id is the function name — neither accepts a task_id (#54).
+        In Airflow only @teardown has a called form
+        (@teardown(on_failure_fail_dagrun=...)); @setup is bare-only.
+        A called @setup(...) still matches here — that code fails at
+        DAG-parse time, but linting its task is the graceful response.
 
         Args:
             node: Entry from a FunctionDef's decorator_list
