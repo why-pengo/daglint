@@ -94,7 +94,7 @@ class CatchupValidationRule(BaseRule):
 
 
 class ScheduleValidationRule(BaseRule):
-    """Validates schedule_interval is properly set."""
+    """Validates schedule is properly set."""
 
     @property
     def rule_id(self) -> str:
@@ -102,7 +102,7 @@ class ScheduleValidationRule(BaseRule):
 
     @property
     def description(self) -> str:
-        return "Schedule interval must be properly configured"
+        return "Schedule must be properly configured"
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
@@ -113,7 +113,7 @@ class ScheduleValidationRule(BaseRule):
             if schedule_value is None and not allow_none:
                 issues.append(
                     self.create_issue(
-                        "schedule_interval must be explicitly set",
+                        "schedule must be explicitly set",
                         file_path,
                         definition.lineno,
                         definition.col_offset,
