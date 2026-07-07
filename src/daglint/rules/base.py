@@ -2,7 +2,7 @@
 
 import ast
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from daglint.config import Config
 from daglint.models import LintIssue
@@ -84,9 +84,30 @@ class TaskDefinition(_AirflowDefinition):
     without caring how the task was declared.
     """
 
+    def __init__(
+        self,
+        call: Optional[ast.Call],
+        function_name: Optional[str] = None,
+        position: Optional[ast.expr] = None,
+        group_prefix: Tuple[str, ...] = (),
+    ):
+        """Initialize a task definition.
+
+        Args:
+            call: The instantiation call or decorator call; None for a
+                bare decorator
+            function_name: Name of the decorated function (decorator form only)
+            position: Node to report issues at; defaults to the call
+            group_prefix: Group ID segments of the enclosing task groups,
+                outermost first; dynamic group IDs appear as unique
+                placeholder segments
+        """
+        super().__init__(call, function_name, position)
+        self.group_prefix = group_prefix
+
     @property
     def task_id(self) -> Optional[str]:
-        """Effective task ID: explicit task_id argument, else the decorated function name.
+        """Leaf task ID: explicit task_id argument, else the decorated function name.
 
         Returns None when a task_id argument is present but not a static
         string — a dynamic ID overrides the function-name default in
@@ -94,6 +115,47 @@ class TaskDefinition(_AirflowDefinition):
         """
         if self.call is not None:
             value = self.get_kwarg("task_id")
+            if value is not None:
+                if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                    return value.value
+                return None
+        return self.function_name
+
+    @property
+    def effective_task_id(self) -> Optional[str]:
+        """Runtime task ID: the leaf task_id prefixed by enclosing group IDs.
+
+        Mirrors Airflow's `group.subgroup.task` dotted paths, so two
+        same-named tasks in different groups have distinct effective IDs.
+        """
+        task_id = self.task_id
+        if task_id is None:
+            return None
+        return ".".join(self.group_prefix + (task_id,))
+
+
+class TaskGroupDefinition(_AirflowDefinition):
+    """A task group defined as a TaskGroup(...) call or an @task_group-decorated function.
+
+    Normalizes the two forms so rules can read the group ID without
+    caring how the group was declared.
+    """
+
+    @property
+    def group_id(self) -> Optional[str]:
+        """Group ID: explicit argument, else the decorated function name.
+
+        Returns None when a group_id argument is present but not a
+        static string — nothing can be validated.
+        """
+        if self.call is not None:
+            value = self.get_kwarg("group_id")
+            # Positional group_id exists only on TaskGroup(...) calls. In the
+            # @task_group(...) decorator form the first positional binds to
+            # python_callable and Airflow drops non-callables at runtime, so
+            # the group ID stays the function name.
+            if value is None and self.function_name is None and self.call.args:
+                value = self.call.args[0]
             if value is not None:
                 if isinstance(value, ast.Constant) and isinstance(value.value, str):
                     return value.value
@@ -232,6 +294,63 @@ class BaseRule(ABC):
             target = target.value
         return isinstance(target, ast.Name) and target.id == "task"
 
+    def _is_task_group_call(self, node: ast.Call) -> bool:
+        """Check if a call is a TaskGroup instantiation.
+
+        Args:
+            node: AST Call node to check
+
+        Returns:
+            True if the call is a TaskGroup instantiation
+        """
+        if isinstance(node.func, ast.Name):
+            return node.func.id == "TaskGroup"
+        elif isinstance(node.func, ast.Attribute):
+            return node.func.attr == "TaskGroup"
+        return False
+
+    def _is_task_group_decorator(self, node: ast.expr) -> bool:
+        """Check if a decorator node is an @task_group decorator (bare or called).
+
+        Args:
+            node: Entry from a FunctionDef's decorator_list
+
+        Returns:
+            True if the decorator is @task_group, @task_group(...), or
+            @<module>.task_group(...)
+        """
+        target = node.func if isinstance(node, ast.Call) else node
+        if isinstance(target, ast.Name):
+            return target.id == "task_group"
+        elif isinstance(target, ast.Attribute):
+            return target.attr == "task_group"
+        return False
+
+    def _group_segment(self, definition: TaskGroupDefinition) -> Optional[str]:
+        """Segment a group contributes to the effective IDs of nested tasks.
+
+        Returns None for groups that add no prefix (a literal
+        prefix_group_id=False). A group whose ID — or prefix toggle —
+        is not statically known yields a placeholder unique to its
+        position, so its tasks can never collide with another group's.
+
+        Args:
+            definition: The group to compute a segment for
+
+        Returns:
+            The segment string, or None when the group adds no prefix
+        """
+        prefix_flag = definition.get_kwarg("prefix_group_id")
+        if prefix_flag is not None:
+            if isinstance(prefix_flag, ast.Constant) and prefix_flag.value is False:
+                return None
+            if not (isinstance(prefix_flag, ast.Constant) and prefix_flag.value is True):
+                return f"<group:L{definition.lineno}:C{definition.col_offset}>"
+        group_id = definition.group_id
+        if group_id is not None:
+            return group_id
+        return f"<group:L{definition.lineno}:C{definition.col_offset}>"
+
     def _find_task_definitions(self, tree: ast.AST) -> List[TaskDefinition]:
         """Find every task definition in a file.
 
@@ -239,21 +358,114 @@ class BaseRule(ABC):
             *Operator(...) instantiation calls
             @task / @task(...) / @task.<flavor> decorated functions (TaskFlow API)
 
+        Tasks lexically nested in `with TaskGroup(...)` blocks or
+        @task_group-decorated functions carry the enclosing group IDs
+        as their group_prefix (#51).
+
         Args:
             tree: Abstract syntax tree of the file
 
         Returns:
             List of normalized task definitions
         """
+        definitions: List[TaskDefinition] = []
+        for node in ast.iter_child_nodes(tree):
+            self._collect_task_definitions(node, (), definitions)
+        return definitions
+
+    def _collect_task_definitions(self, node: ast.AST, prefix: Tuple[str, ...], definitions: List[TaskDefinition]) -> None:
+        """Recursively collect task definitions, tracking the group-prefix stack.
+
+        Args:
+            node: Node to visit
+            prefix: Group ID segments of the enclosing task groups
+            definitions: Accumulator for found task definitions
+        """
+        if isinstance(node, (ast.With, ast.AsyncWith)):
+            self._collect_from_with(node, prefix, definitions)
+            return
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            self._collect_from_function(node, prefix, definitions)
+            return
+        if isinstance(node, ast.Call) and self._is_operator_call(node):
+            definitions.append(TaskDefinition(call=node, group_prefix=prefix))
+        for child in ast.iter_child_nodes(node):
+            self._collect_task_definitions(child, prefix, definitions)
+
+    def _collect_from_with(
+        self, node: Union[ast.With, ast.AsyncWith], prefix: Tuple[str, ...], definitions: List[TaskDefinition]
+    ) -> None:
+        """Collect tasks from a with statement, entering TaskGroup scopes.
+
+        Args:
+            node: The With/AsyncWith node
+            prefix: Group ID segments of the enclosing task groups
+            definitions: Accumulator for found task definitions
+        """
+        body_prefix = prefix
+        for item in node.items:
+            context = item.context_expr
+            if isinstance(context, ast.Call) and self._is_task_group_call(context):
+                segment = self._group_segment(TaskGroupDefinition(call=context))
+                if segment is not None:
+                    body_prefix = body_prefix + (segment,)
+            else:
+                self._collect_task_definitions(context, prefix, definitions)
+        for child in node.body:
+            self._collect_task_definitions(child, body_prefix, definitions)
+
+    def _collect_from_function(
+        self,
+        node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+        prefix: Tuple[str, ...],
+        definitions: List[TaskDefinition],
+    ) -> None:
+        """Collect tasks from a function definition, entering @task_group scopes.
+
+        Args:
+            node: The FunctionDef/AsyncFunctionDef node
+            prefix: Group ID segments of the enclosing task groups
+            definitions: Accumulator for found task definitions
+        """
+        body_prefix = prefix
+        for decorator in node.decorator_list:
+            if self._is_task_group_decorator(decorator):
+                call = decorator if isinstance(decorator, ast.Call) else None
+                group = TaskGroupDefinition(call=call, function_name=node.name, position=decorator)
+                segment = self._group_segment(group)
+                if segment is not None:
+                    body_prefix = body_prefix + (segment,)
+                break
+            if self._is_task_decorator(decorator):
+                call = decorator if isinstance(decorator, ast.Call) else None
+                definitions.append(TaskDefinition(call=call, function_name=node.name, position=decorator, group_prefix=prefix))
+                break
+        for child in ast.iter_child_nodes(node):
+            child_prefix = body_prefix if child in node.body else prefix
+            self._collect_task_definitions(child, child_prefix, definitions)
+
+    def _find_task_group_definitions(self, tree: ast.AST) -> List[TaskGroupDefinition]:
+        """Find every task group definition in a file.
+
+        Matches both declaration styles:
+            TaskGroup(...) / <module>.TaskGroup(...) instantiation calls
+            @task_group / @task_group(...) decorated functions (TaskFlow API)
+
+        Args:
+            tree: Abstract syntax tree of the file
+
+        Returns:
+            List of normalized task group definitions
+        """
         definitions = []
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and self._is_operator_call(node):
-                definitions.append(TaskDefinition(call=node))
+            if isinstance(node, ast.Call) and self._is_task_group_call(node):
+                definitions.append(TaskGroupDefinition(call=node))
             elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 for decorator in node.decorator_list:
-                    if self._is_task_decorator(decorator):
+                    if self._is_task_group_decorator(decorator):
                         call = decorator if isinstance(decorator, ast.Call) else None
-                        definitions.append(TaskDefinition(call=call, function_name=node.name, position=decorator))
+                        definitions.append(TaskGroupDefinition(call=call, function_name=node.name, position=decorator))
                         break
         return definitions
 

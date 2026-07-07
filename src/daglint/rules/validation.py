@@ -23,7 +23,7 @@ class NoDuplicateTaskIDsRule(BaseRule):
         task_ids: dict[str, int] = {}
 
         for definition in self._find_task_definitions(tree):
-            task_id = definition.task_id
+            task_id = definition.effective_task_id
             if task_id:
                 if task_id in task_ids:
                     issues.append(
