@@ -100,7 +100,7 @@ def _render_text(results: FileResults, exit_code: int, verbose: bool):
     summary_color = Fore.RED if exit_code else Fore.YELLOW
     click.echo(f"{summary_color}Found {total_issues} issue(s) ({detail}) in {len(results)} file(s).{Style.RESET_ALL}")
     if exit_code == 0:
-        click.echo("Warnings do not fail the build; use --strict to change that.")
+        click.echo("Non-error issues do not fail the build; use --strict to change that.")
 
 
 def _render_json(results: FileResults):
@@ -123,15 +123,23 @@ def _render_json(results: FileResults):
     click.echo(json.dumps(payload, indent=2))
 
 
+def _escape_github(value: str, is_property: bool = False) -> str:
+    """Escape a value for use in a GitHub Actions workflow command."""
+    value = value.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    if is_property:
+        value = value.replace(":", "%3A").replace(",", "%2C")
+    return value
+
+
 def _render_github(results: FileResults):
     """Render results as GitHub Actions workflow commands."""
     command_for_severity = {"error": "error", "warning": "warning", "info": "notice"}
     all_issues = [issue for _, issues in results for issue in issues]
     for issue in all_issues:
         command = command_for_severity[issue.severity]
-        click.echo(
-            f"::{command} file={issue.file_path},line={issue.line},col={issue.column}" f"::[{issue.rule_id}] {issue.message}"
-        )
+        file_property = _escape_github(issue.file_path, is_property=True)
+        message = _escape_github(f"[{issue.rule_id}] {issue.message}")
+        click.echo(f"::{command} file={file_property},line={issue.line},col={issue.column}::{message}")
 
     counts = _severity_counts(all_issues)
     click.echo(

@@ -293,7 +293,7 @@ def test_check_warnings_only_passes_by_default():
     result = _run_check(WARNINGS_ONLY_DAG)
     assert result.exit_code == 0
     assert "warning(s)" in result.output
-    assert "use --strict" in result.output
+    assert "do not fail the build; use --strict" in result.output
 
 
 def test_check_warnings_only_fails_with_strict():
@@ -360,6 +360,26 @@ def test_check_format_github_warning_severity():
     assert result.exit_code == 0
     assert "::warning file=" in result.output
     assert "::error" not in result.output
+
+
+def test_render_github_escapes_special_characters(capsys):
+    """Workflow-command properties and messages escape %, newlines, commas, colons."""
+    from daglint.cli import _render_github
+    from daglint.models import LintIssue
+
+    issue = LintIssue(
+        rule_id="demo_rule",
+        message="50% of tasks fail\nsee: docs",
+        file_path="dags/a,b:c.py",
+        line=3,
+        severity="warning",
+        column=1,
+    )
+    _render_github([(Path("dags/a,b:c.py"), [issue])])
+    out = capsys.readouterr().out
+    assert "::warning file=dags/a%2Cb%3Ac.py,line=3,col=1::" in out
+    assert "[demo_rule] 50%25 of tasks fail%0Asee: docs" in out
+    assert "\nsee" not in out.split("daglint checked")[0]
 
 
 def test_check_format_rejects_unknown():
