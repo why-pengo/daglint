@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `--format [text|json|github]` option on `daglint check`: `json` emits a machine-readable envelope (`issues` list plus a `summary` block), `github` emits GitHub Actions workflow commands so issues appear as inline PR annotations (#39).
+- `--strict` flag: exit non-zero on any issue, not just errors (#39).
+
+### Changed
+- **Breaking for CI gating on warnings:** `daglint check` now exits 1 only when error-severity issues are found. Warning/info issues alone exit 0 unless `--strict` is passed. Exit code 2 means a usage error (#39).
+
 ## [0.6.1] - 2025-12-05
 
 ### Fixed

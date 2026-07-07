@@ -1,15 +1,19 @@
 """Command-line interface for daglint."""
 
+import json
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import click
 from colorama import Fore, Style, init
 
 from daglint.config import Config
 from daglint.linter import DAGLinter
+from daglint.models import LintIssue
 from daglint.rules import AVAILABLE_RULES
+
+FileResults = List[Tuple[Path, List[LintIssue]]]
 
 # Initialize colorama for cross-platform colored output
 init(autoreset=True)
@@ -42,7 +46,27 @@ def _collect_files(target_path: Path) -> list:
     return list(target_path.rglob("*.py"))
 
 
-def _print_issue(issue):
+def _severity_counts(issues: List[LintIssue]) -> dict:
+    """Count issues by severity."""
+    counts = {"errors": 0, "warnings": 0, "infos": 0}
+    for issue in issues:
+        if issue.severity == "error":
+            counts["errors"] += 1
+        elif issue.severity == "warning":
+            counts["warnings"] += 1
+        else:
+            counts["infos"] += 1
+    return counts
+
+
+def _exit_code(issues: List[LintIssue], strict: bool) -> int:
+    """Determine the exit code: 1 on errors (or any issue with --strict), else 0."""
+    if strict:
+        return 1 if issues else 0
+    return 1 if any(issue.severity == "error" for issue in issues) else 0
+
+
+def _print_issue(issue: LintIssue):
     """Print a single linting issue."""
     severity_color = Fore.RED if issue.severity == "error" else Fore.YELLOW
     click.echo(
@@ -50,15 +74,78 @@ def _print_issue(issue):
     )
 
 
-def _print_summary(total_issues: int, file_count: int):
-    """Print summary of linting results."""
+def _render_text(results: FileResults, exit_code: int, verbose: bool):
+    """Render results as colorized human-readable text."""
+    total_issues = 0
+    for file_path, issues in results:
+        if verbose:
+            click.echo(f"\n{Fore.CYAN}Checking: {file_path}{Style.RESET_ALL}")
+        if issues:
+            total_issues += len(issues)
+            click.echo(f"\n{Fore.RED}✗ {file_path}{Style.RESET_ALL}")
+            for issue in issues:
+                _print_issue(issue)
+        else:
+            click.echo(f"{Fore.GREEN}✓ {file_path}{Style.RESET_ALL}")
+
     click.echo(f"\n{'-' * 50}")
     if total_issues == 0:
         click.echo(f"{Fore.GREEN}All checks passed!{Style.RESET_ALL}")
-        sys.exit(0)
-    else:
-        click.echo(f"{Fore.RED}Found {total_issues} issue(s) in {file_count} file(s).{Style.RESET_ALL}")
-        sys.exit(1)
+        return
+
+    counts = _severity_counts([issue for _, issues in results for issue in issues])
+    detail = f"{counts['errors']} error(s), {counts['warnings']} warning(s)"
+    if counts["infos"]:
+        detail += f", {counts['infos']} info(s)"
+    summary_color = Fore.RED if exit_code else Fore.YELLOW
+    click.echo(f"{summary_color}Found {total_issues} issue(s) ({detail}) in {len(results)} file(s).{Style.RESET_ALL}")
+    if exit_code == 0:
+        click.echo("Non-error issues do not fail the build; use --strict to change that.")
+
+
+def _render_json(results: FileResults):
+    """Render results as a machine-readable JSON envelope."""
+    all_issues = [issue for _, issues in results for issue in issues]
+    payload = {
+        "issues": [
+            {
+                "rule_id": issue.rule_id,
+                "severity": issue.severity,
+                "file": issue.file_path,
+                "line": issue.line,
+                "column": issue.column,
+                "message": issue.message,
+            }
+            for issue in all_issues
+        ],
+        "summary": {"files_checked": len(results), **_severity_counts(all_issues)},
+    }
+    click.echo(json.dumps(payload, indent=2))
+
+
+def _escape_github(value: str, is_property: bool = False) -> str:
+    """Escape a value for use in a GitHub Actions workflow command."""
+    value = value.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    if is_property:
+        value = value.replace(":", "%3A").replace(",", "%2C")
+    return value
+
+
+def _render_github(results: FileResults):
+    """Render results as GitHub Actions workflow commands."""
+    command_for_severity = {"error": "error", "warning": "warning", "info": "notice"}
+    all_issues = [issue for _, issues in results for issue in issues]
+    for issue in all_issues:
+        command = command_for_severity[issue.severity]
+        file_property = _escape_github(issue.file_path, is_property=True)
+        message = _escape_github(f"[{issue.rule_id}] {issue.message}")
+        click.echo(f"::{command} file={file_property},line={issue.line},col={issue.column}::{message}")
+
+    counts = _severity_counts(all_issues)
+    click.echo(
+        f"daglint checked {len(results)} file(s): "
+        f"{counts['errors']} error(s), {counts['warnings']} warning(s), {counts['infos']} info(s)."
+    )
 
 
 @cli.command()
@@ -66,10 +153,32 @@ def _print_summary(total_issues: int, file_count: int):
 @click.option("--config", "-c", type=click.Path(exists=True), help="Path to configuration file")
 @click.option("--rules", "-r", help="Comma-separated list of rules to check")
 @click.option("--verbose", "-v", is_flag=True, help="Verbose output")
-def check(path: str, config: Optional[str], rules: Optional[str], verbose: bool):
+@click.option(
+    "--format",
+    "-f",
+    "output_format",
+    type=click.Choice(["text", "json", "github"]),
+    default="text",
+    help="Output format: colorized text, a JSON envelope, or GitHub Actions annotations",
+)
+@click.option("--strict", is_flag=True, help="Exit non-zero on any issue, not just errors")
+def check(
+    path: str,
+    config: Optional[str],
+    rules: Optional[str],
+    verbose: bool,
+    output_format: str,
+    strict: bool,
+):
     """Check DAG files for linting issues.
 
     PATH can be a single file or a directory containing DAG files.
+
+    \b
+    Exit codes:
+      0  no issues (or only warnings/info without --strict)
+      1  error-severity issues found (any issue with --strict)
+      2  usage error
     """
     target_path = Path(path)
 
@@ -91,30 +200,24 @@ def check(path: str, config: Optional[str], rules: Optional[str], verbose: bool)
     # Collect files to lint
     files_to_check = _collect_files(target_path)
 
-    if not files_to_check:
+    if not files_to_check and output_format == "text":
         click.echo(f"{Fore.YELLOW}No Python files found to check.{Style.RESET_ALL}")
         sys.exit(0)
 
-    # Run linter
+    # Run linter, collecting all results before presenting them
     linter = DAGLinter(cfg, verbose=verbose)
-    total_issues = 0
+    results: FileResults = [(file_path, linter.lint_file(str(file_path))) for file_path in files_to_check]
+    all_issues = [issue for _, issues in results for issue in issues]
+    exit_code = _exit_code(all_issues, strict)
 
-    for file_path in files_to_check:
-        if verbose:
-            click.echo(f"\n{Fore.CYAN}Checking: {file_path}{Style.RESET_ALL}")
+    if output_format == "json":
+        _render_json(results)
+    elif output_format == "github":
+        _render_github(results)
+    else:
+        _render_text(results, exit_code, verbose)
 
-        issues = linter.lint_file(str(file_path))
-
-        if issues:
-            total_issues += len(issues)
-            click.echo(f"\n{Fore.RED}✗ {file_path}{Style.RESET_ALL}")
-            for issue in issues:
-                _print_issue(issue)
-        else:
-            click.echo(f"{Fore.GREEN}✓ {file_path}{Style.RESET_ALL}")
-
-    # Print summary
-    _print_summary(total_issues, len(files_to_check))
+    sys.exit(exit_code)
 
 
 @cli.command()

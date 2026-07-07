@@ -40,6 +40,15 @@ daglint check dags/
 # Run specific rules only
 daglint check dags/ --rules dag_id_convention,owner_validation
 
+# Machine-readable output for CI and editors
+daglint check dags/ --format json
+
+# GitHub Actions annotations (issues appear inline on PRs)
+daglint check dags/ --format github
+
+# Fail on warnings too, not just errors
+daglint check dags/ --strict
+
 # List all available rules
 daglint rules
 
@@ -55,6 +64,7 @@ $ daglint check examples/invalid_dag.py
   ERROR   [owner_validation]           Line  8: Invalid owner 'invalid-team'. Must be one of: data-team, analytics-team, airflow
   ERROR   [required_dag_params]        Line  8: Missing required parameters in default_args: retries, start_date
   ERROR   [dag_id_convention]          Line 19: DAG ID 'InvalidDAGID' does not match pattern '^[a-z][a-z0-9_]*$'
+  WARNING [doc_md_validation]          Line 19: DAG is missing doc_md documentation
   WARNING [tag_requirements]           Line 19: Missing required tags: team, environment
   WARNING [max_active_runs_validation] Line 19: max_active_runs must be explicitly set to 1
   WARNING [catchup_validation]         Line 19: Catchup parameter not set. Consider setting it explicitly to False
@@ -64,7 +74,7 @@ $ daglint check examples/invalid_dag.py
   ERROR   [no_duplicate_task_ids]      Line 36: Duplicate task_id 'InvalidTaskID' (first seen at line 30)
 
 --------------------------------------------------
-Found 10 issue(s) in 1 file(s).
+Found 11 issue(s) (6 error(s), 5 warning(s)) in 1 file(s).
 
 $ daglint check examples/valid_dag.py
 ✓ examples/valid_dag.py
@@ -72,6 +82,41 @@ $ daglint check examples/valid_dag.py
 --------------------------------------------------
 All checks passed!
 ```
+
+### Output formats
+
+`--format` selects how issues are reported (default `text`):
+
+- `text` — colorized human-readable output, as above.
+- `json` — a machine-readable envelope for CI systems, editors, and wrappers:
+
+  ```json
+  {
+    "issues": [
+      {
+        "rule_id": "owner_validation",
+        "severity": "warning",
+        "file": "dags/etl.py",
+        "line": 12,
+        "column": 0,
+        "message": "DAG must have an owner"
+      }
+    ],
+    "summary": {"files_checked": 8, "errors": 0, "warnings": 1, "infos": 0}
+  }
+  ```
+
+- `github` — GitHub Actions [workflow commands](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions) (`::error file=...,line=...::message`), so issues show up as inline annotations on pull requests.
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | No issues found, or only warning/info issues without `--strict` |
+| 1 | At least one error-severity issue (with `--strict`: any issue at all) |
+| 2 | Usage error (unknown rule, bad flag, missing path) |
+
+Warning-severity issues are advisory and do not fail the build by default; pass `--strict` to make them fail CI.
 
 ## Configuration
 
