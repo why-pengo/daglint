@@ -221,7 +221,7 @@ pip install -e .
 ### CI Failing
 - Check GitHub Actions logs
 - Run tests locally first
-- Ensure all dependencies are in requirements.txt
+- Ensure all dependencies are declared in pyproject.toml
 
 ## Support
 
