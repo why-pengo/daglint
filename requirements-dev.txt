@@ -14,7 +14,7 @@ bumpver==2025.1131
     # via daglint (pyproject.toml)
 certifi==2025.11.12
     # via requests
-charset-normalizer==3.4.4
+charset-normalizer==3.4.9
     # via requests
 click==8.3.1
     # via
