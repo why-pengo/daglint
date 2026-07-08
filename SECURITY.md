@@ -6,8 +6,8 @@ Only the latest release of daglint receives security fixes.
 
 | Version | Supported |
 | ------- | --------- |
-| Latest 1.x | ✅ |
-| < 1.0 | ❌ |
+| Latest release | ✅ |
+| All older versions | ❌ |
 
 ## Reporting a Vulnerability
 

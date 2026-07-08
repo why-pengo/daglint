@@ -14,6 +14,9 @@ permissions:
 jobs:
   analyze:
     name: Analyze Python
+    # Fork PRs get a read-only token without security-events: write, so the
+    # results upload would fail; forks are still covered by push + cron runs.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
