@@ -37,9 +37,6 @@ push = false
 "src/daglint/__init__.py" = [
     '__version__ = "{version}"',
 ]
-"PROJECT_SUMMARY.md" = [
-    '**Version:** {version}',
-]
 "DEPLOYMENT.md" = [
     '**Version**: {version}',
 ]
@@ -151,7 +148,7 @@ bumpver update --patch --push
 
 ### Standard Release Workflow
 
-1. **Make your changes and commit them**
+1. **Make your changes and commit them on `develop`**
    ```bash
    git add .
    git commit -m "Add new feature"
@@ -162,7 +159,7 @@ bumpver update --patch --push
    bumpver update --minor --dry --no-fetch
    ```
 
-3. **Apply the version bump**
+3. **Apply the version bump** (creates a commit and tag locally)
    ```bash
    bumpver update --minor --no-fetch
    ```
@@ -170,27 +167,32 @@ bumpver update --patch --push
    This will:
    - Update version in `pyproject.toml` (2 places)
    - Update version in `src/daglint/__init__.py`
-   - Update version in `PROJECT_SUMMARY.md`
    - Update version in `DEPLOYMENT.md`
    - Create a git commit with message: "bump version 0.5.0 -> 0.6.0"
    - Create a git tag: "v0.6.0"
 
-4. **Push to remote**
+4. **Open a PR from `develop` → `main`** (the release PR — include CHANGELOG updates)
+
+5. **After the PR merges, push the tag and publish**
    ```bash
-   git push origin main --tags
+   git push origin --tags
+   python -m build
+   python -m twine upload dist/*
    ```
 
 ### Quick Patch Release
 
-For quick bug fixes:
+For quick bug fixes on `develop`:
 
 ```bash
 # Preview
 bumpver update --patch --dry --no-fetch
 
-# Apply and push
+# Apply
 bumpver update --patch --no-fetch
-git push origin main --tags
+
+# Open PR develop → main, then after merge:
+git push origin --tags
 ```
 
 ### Pre-release Testing
@@ -243,10 +245,7 @@ When you run bumpver, it automatically updates:
 2. **`src/daglint/__init__.py`**
    - Line: `__version__ = "X.Y.Z"`
 
-3. **`PROJECT_SUMMARY.md`**
-   - Line: `**Version:** X.Y.Z`
-
-4. **`DEPLOYMENT.md`**
+3. **`DEPLOYMENT.md`**
    - Line: `**Version**: X.Y.Z`
 
 ## Troubleshooting
@@ -279,17 +278,16 @@ bumpver show --no-fetch -v
 
 ### Manual Version Update
 
-If bumpver fails, you can manually update these files:
+If bumpver fails, manually update these files:
 
-1. `pyproject.toml` - Update both `version` and `current_version`
-2. `src/daglint/__init__.py` - Update `__version__`
-3. `PROJECT_SUMMARY.md` - Update `**Version:**` line
-4. `DEPLOYMENT.md` - Update `**Version**:` line
+1. `pyproject.toml` — update both `version` and `current_version`
+2. `src/daglint/__init__.py` — update `__version__`
+3. `DEPLOYMENT.md` — update `**Version**:` line
 
 Then commit and tag:
 
 ```bash
-git add pyproject.toml src/daglint/__init__.py PROJECT_SUMMARY.md DEPLOYMENT.md
+git add pyproject.toml src/daglint/__init__.py DEPLOYMENT.md
 git commit -m "bump version 0.5.0 -> 0.5.1"
 git tag v0.5.1
 ```
@@ -306,9 +304,8 @@ You can automate version bumping in GitHub Actions:
     pip install bumpver
     bumpver update --patch --no-fetch
     
-- name: Push changes
-  run: |
-    git push origin main --tags
+- name: Push tag
+  run: git push origin --tags
 ```
 
 ### Pre-commit Hook

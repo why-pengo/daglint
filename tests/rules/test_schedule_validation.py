@@ -31,7 +31,7 @@ dag = DAG('my_dag')
         rule = ScheduleValidationRule({"allow_none": False})
         issues = rule.check(tree, "test.py", code)
         assert len(issues) == 1
-        assert "schedule_interval must be explicitly set" in issues[0].message
+        assert "schedule must be explicitly set" in issues[0].message
 
     def test_rule_has_metadata(self):
         """Test that rule has required metadata."""

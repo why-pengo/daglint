@@ -1,4 +1,4 @@
-"""Rules for naming conventions (DAG IDs, Task IDs)."""
+"""Rules for naming conventions (DAG IDs, Task IDs, Task Group IDs)."""
 
 import ast
 import re
@@ -21,35 +21,19 @@ class DAGIDConventionRule(BaseRule):
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
-        pattern = self.config.get("pattern", r"^[a-z][a-z0-9_]*$")
+        pattern = self.config["pattern"]
 
-        for node in ast.walk(tree):
-            # Look for DAG instantiation
-            if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Name) and node.func.id == "DAG":
-                    dag_id = self._extract_dag_id(node)
-                    if dag_id and not re.match(pattern, dag_id):
-                        issues.append(
-                            self.create_issue(
-                                f"DAG ID '{dag_id}' does not match pattern '{pattern}'",
-                                file_path,
-                                node.lineno,
-                                node.col_offset,
-                            )
-                        )
-
-                # Handle context manager (with DAG(...) as dag:)
-                elif isinstance(node.func, ast.Attribute) and node.func.attr == "DAG":
-                    dag_id = self._extract_dag_id(node)
-                    if dag_id and not re.match(pattern, dag_id):
-                        issues.append(
-                            self.create_issue(
-                                f"DAG ID '{dag_id}' does not match pattern '{pattern}'",
-                                file_path,
-                                node.lineno,
-                                node.col_offset,
-                            )
-                        )
+        for definition in self._find_dag_definitions(tree):
+            dag_id = definition.dag_id
+            if dag_id and not re.match(pattern, dag_id):
+                issues.append(
+                    self.create_issue(
+                        f"DAG ID '{dag_id}' does not match pattern '{pattern}'",
+                        file_path,
+                        definition.lineno,
+                        definition.col_offset,
+                    )
+                )
 
         return issues
 
@@ -67,21 +51,48 @@ class TaskIDConventionRule(BaseRule):
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
-        pattern = self.config.get("pattern", r"^[a-z][a-z0-9_]*$")
+        pattern = self.config["pattern"]
 
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                # Check if this is an operator instantiation
-                if self._is_operator_call(node):
-                    task_id = self._extract_task_id(node)
-                    if task_id and not re.match(pattern, task_id):
-                        issues.append(
-                            self.create_issue(
-                                f"Task ID '{task_id}' does not match pattern '{pattern}'",
-                                file_path,
-                                node.lineno,
-                                node.col_offset,
-                            )
-                        )
+        for definition in self._find_task_definitions(tree):
+            task_id = definition.task_id
+            if task_id and not re.match(pattern, task_id):
+                issues.append(
+                    self.create_issue(
+                        f"Task ID '{task_id}' does not match pattern '{pattern}'",
+                        file_path,
+                        definition.lineno,
+                        definition.col_offset,
+                    )
+                )
+
+        return issues
+
+
+class GroupIDConventionRule(BaseRule):
+    """Ensures task group IDs follow naming conventions."""
+
+    @property
+    def rule_id(self) -> str:
+        return "group_id_convention"
+
+    @property
+    def description(self) -> str:
+        return "Task group IDs must follow the specified naming pattern (default: snake_case)"
+
+    def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
+        issues = []
+        pattern = self.config["pattern"]
+
+        for definition in self._find_task_group_definitions(tree):
+            group_id = definition.group_id
+            if group_id and not re.match(pattern, group_id):
+                issues.append(
+                    self.create_issue(
+                        f"Task group ID '{group_id}' does not match pattern '{pattern}'",
+                        file_path,
+                        definition.lineno,
+                        definition.col_offset,
+                    )
+                )
 
         return issues

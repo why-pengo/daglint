@@ -1,0 +1,40 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '26 7 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze Python
+    # Fork PRs get a read-only token without security-events: write, so the
+    # results upload would fail; forks are still covered by push + cron runs.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v4
+      with:
+        languages: python
+        build-mode: none
+
+    - name: Perform CodeQL analysis
+      uses: github/codeql-action/analyze@v4
+      with:
+        category: "/language:python"

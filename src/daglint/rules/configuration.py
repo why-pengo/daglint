@@ -1,7 +1,7 @@
 """Rules for DAG configuration validation (retries, catchup, schedule)."""
 
 import ast
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from daglint.models import LintIssue
 from daglint.rules.base import BaseRule
@@ -20,8 +20,8 @@ class RetryConfigurationRule(BaseRule):
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
-        min_retries = self.config.get("min_retries", 1)
-        max_retries = self.config.get("max_retries", 5)
+        min_retries = self.config["min_retries"]
+        max_retries = self.config["max_retries"]
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Dict):
@@ -70,37 +70,31 @@ class CatchupValidationRule(BaseRule):
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
-        default_catchup = self.config.get("default_catchup", False)
+        default_catchup = self.config["default_catchup"]
 
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Name) and node.func.id == "DAG":
-                    catchup_value = self._extract_catchup(node)
-                    if catchup_value is None:
-                        issues.append(
-                            self.create_issue(
-                                f"Catchup parameter not set. Consider setting it explicitly to {default_catchup}",
-                                file_path,
-                                node.lineno,
-                                node.col_offset,
-                            )
-                        )
+        for definition in self._find_dag_definitions(tree):
+            catchup_value = self._extract_catchup(definition.get_kwarg("catchup"))
+            if catchup_value is None:
+                issues.append(
+                    self.create_issue(
+                        f"Catchup parameter not set. Consider setting it explicitly to {default_catchup}",
+                        file_path,
+                        definition.lineno,
+                        definition.col_offset,
+                    )
+                )
 
         return issues
 
-    def _extract_catchup(self, node: ast.Call) -> Optional[bool]:
-        """Extract catchup parameter from a DAG() call."""
-        for keyword in node.keywords:
-            if keyword.arg == "catchup":
-                if isinstance(keyword.value, ast.Constant):
-                    value = keyword.value.value
-                    if isinstance(value, bool):
-                        return value
+    def _extract_catchup(self, value: Optional[ast.expr]) -> Optional[bool]:
+        """Extract a boolean from a catchup argument value node."""
+        if isinstance(value, ast.Constant) and isinstance(value.value, bool):
+            return value.value
         return None
 
 
 class ScheduleValidationRule(BaseRule):
-    """Validates schedule_interval is properly set."""
+    """Validates schedule is properly set."""
 
     @property
     def rule_id(self) -> str:
@@ -108,31 +102,22 @@ class ScheduleValidationRule(BaseRule):
 
     @property
     def description(self) -> str:
-        return "Schedule interval must be properly configured"
+        return "Schedule must be properly configured"
 
     def check(self, tree: ast.AST, file_path: str, source_code: str) -> List[LintIssue]:
         issues = []
-        allow_none = self.config.get("allow_none", False)
+        allow_none = self.config["allow_none"]
 
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Name) and node.func.id == "DAG":
-                    schedule_value = self._extract_schedule(node)
-                    if schedule_value is None and not allow_none:
-                        issues.append(
-                            self.create_issue(
-                                "schedule_interval must be explicitly set",
-                                file_path,
-                                node.lineno,
-                                node.col_offset,
-                            )
-                        )
+        for definition in self._find_dag_definitions(tree):
+            schedule_value = definition.get_kwarg("schedule_interval") or definition.get_kwarg("schedule")
+            if schedule_value is None and not allow_none:
+                issues.append(
+                    self.create_issue(
+                        "schedule must be explicitly set",
+                        file_path,
+                        definition.lineno,
+                        definition.col_offset,
+                    )
+                )
 
         return issues
-
-    def _extract_schedule(self, node: ast.Call) -> Optional[Any]:
-        """Extract schedule_interval parameter from a DAG() call."""
-        for keyword in node.keywords:
-            if keyword.arg in ("schedule_interval", "schedule"):
-                return keyword.value
-        return None

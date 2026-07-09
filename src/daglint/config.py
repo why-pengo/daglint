@@ -4,6 +4,12 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
+VALID_SEVERITIES = ("error", "warning", "info")
+
+
+class ConfigError(ValueError):
+    """Raised when a configuration file contains invalid values."""
+
 
 class Config:
     """Configuration for DAGLint."""
@@ -13,9 +19,44 @@ class Config:
 
         Args:
             config_dict: Configuration dictionary
+
+        Raises:
+            ConfigError: If the configuration contains invalid values
         """
+        if config_dict is not None and not isinstance(config_dict, dict):
+            raise ConfigError("Configuration must be a mapping of settings")
         self.config = config_dict or self._default_config()
-        self.rules_config = self.config.get("rules", {})
+
+        rules = self.config.get("rules") or {}
+        if not isinstance(rules, dict):
+            raise ConfigError("'rules' must be a mapping of rule names to their settings")
+        self.rules_config = rules
+        self._validate()
+
+    def _validate(self) -> None:
+        """Validate configuration values, failing fast with a clear message."""
+        excludes = self.config.get("exclude", [])
+        if not isinstance(excludes, list) or not all(isinstance(p, str) for p in excludes):
+            raise ConfigError("'exclude' must be a list of directory-name patterns")
+
+        for rule_id, rule_config in self.rules_config.items():
+            if rule_config is None:
+                self.rules_config[rule_id] = rule_config = {}
+            if not isinstance(rule_config, dict):
+                raise ConfigError(
+                    f"Configuration for rule '{rule_id}' must be a mapping of settings, " f"got {type(rule_config).__name__}"
+                )
+            severity = rule_config.get("severity")
+            if severity is not None and severity not in VALID_SEVERITIES:
+                raise ConfigError(
+                    f"Invalid severity '{severity}' for rule '{rule_id}'. "
+                    f"Valid severities are: {', '.join(VALID_SEVERITIES)}"
+                )
+
+    @property
+    def excludes(self) -> List[str]:
+        """Directory-name patterns to exclude, on top of the built-in defaults."""
+        return list(self.config.get("exclude", []))
 
     @staticmethod
     def _default_config() -> Dict[str, Any]:
@@ -33,6 +74,11 @@ class Config:
                     "severity": "error",
                 },
                 "task_id_convention": {
+                    "enabled": True,
+                    "pattern": r"^[a-z][a-z0-9_]*$",
+                    "severity": "error",
+                },
+                "group_id_convention": {
                     "enabled": True,
                     "pattern": r"^[a-z][a-z0-9_]*$",
                     "severity": "error",
@@ -79,6 +125,19 @@ class Config:
             }
         }
 
+    @staticmethod
+    def default_rule_config(rule_id: str) -> Dict[str, Any]:
+        """Get the default configuration for a single rule.
+
+        Args:
+            rule_id: Rule identifier
+
+        Returns:
+            The rule's default configuration, or an empty dict for
+            rules not in the default config
+        """
+        return dict(Config._default_config()["rules"].get(rule_id, {}))
+
     @classmethod
     def default(cls) -> "Config":
         """Create a default configuration."""
@@ -121,14 +180,19 @@ class Config:
         rule_config = self.get_rule_config(rule_id)
         return bool(rule_config.get("enabled", True))
 
-    def set_active_rules(self, rule_ids: List[str]) -> None:
-        """Enable only specified rules.
+    def set_active_rules(self, rule_ids: List[str], all_rule_ids: Optional[List[str]] = None) -> None:
+        """Enable only the specified rules, disabling all others.
 
         Args:
             rule_ids: List of rule IDs to enable
+            all_rule_ids: Full universe of known rule IDs. Rules listed here
+                but absent from the loaded config get an explicit disabled
+                entry, so a partial config file cannot leave them enabled
+                by default.
         """
-        for rule_id in self.rules_config:
-            self.rules_config[rule_id]["enabled"] = rule_id in rule_ids
+        universe = set(self.rules_config) | set(rule_ids) | set(all_rule_ids or [])
+        for rule_id in universe:
+            self.rules_config.setdefault(rule_id, {})["enabled"] = rule_id in rule_ids
 
     @staticmethod
     def generate_default_config(output_path: str) -> None:
