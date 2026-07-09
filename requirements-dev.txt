@@ -28,7 +28,7 @@ colorama==0.4.6
     #   daglint (pyproject.toml)
 coverage[toml]==7.12.0
     # via pytest-cov
-docutils==0.22.3
+docutils==0.23
     # via readme-renderer
 flake8==7.3.0
     # via daglint (pyproject.toml)
