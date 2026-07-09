@@ -87,7 +87,14 @@ repos:
 
 ## Publishing to PyPI
 
-When ready to release, the workflow is: bump the version on `develop`, open a PR to `main`, merge, push the tag, then publish manually.
+Releases are published automatically by CI (`.github/workflows/release.yml`) using
+[PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) — no API tokens or
+stored secrets. Pushing a release tag (unprefixed, e.g. `1.1.0`) triggers the workflow,
+which builds the sdist and wheel, verifies them with `twine check`, and publishes to
+PyPI from the protected `pypi` environment.
+
+The release flow is: bump the version on `develop`, open a PR to `main`, merge, push
+the tag — CI does the rest.
 
 ### 1. Update Version with Bumpver
 
@@ -108,82 +115,35 @@ This automatically updates:
 - `src/daglint/__init__.py`
 - `DEPLOYMENT.md`
 
-### 2. Build Distribution Packages
+### 2. Open and Merge the Release PR
+
+Open a PR from `develop` to `main` and merge it once CI passes.
+
+### 3. Push the Tag
+
+bumpver already created the tag locally (unprefixed, e.g. `1.1.0`). Push only that
+tag — avoid `git push --tags`, which pushes every local tag and could trigger
+unintended release runs:
 
 ```bash
-# Clean old builds
-rm -rf dist/ build/ *.egg-info
-
-# Build source and wheel distributions
-python -m build
+git push origin 1.1.0
 ```
 
-This creates:
-- `dist/daglint-X.Y.Z.tar.gz` (source distribution)
-- `dist/daglint-X.Y.Z-py3-none-any.whl` (wheel distribution)
+### 4. Approve the Publish
 
-### 3. Check Package with Twine
+The tag push starts the **Release** workflow. It builds the sdist and wheel, runs
+`twine check`, then pauses: the publish job waits for approval on the `pypi`
+environment. Approve it under Actions → the workflow run → **Review deployments**.
+Once approved, CI publishes via Trusted Publishing (OIDC) — no credentials involved.
+
+### 5. Verify
 
 ```bash
-# Verify the package metadata and files
-python -m twine check dist/*
+pip install --upgrade daglint
+daglint --version
 ```
 
-### 4. Test Upload to TestPyPI (Recommended)
-
-```bash
-# Upload to TestPyPI first
-python -m twine upload --repository testpypi dist/*
-
-# Test installation from TestPyPI
-pip install --index-url https://test.pypi.org/simple/ --no-deps daglint
-```
-
-### 5. Upload to Production PyPI
-
-```bash
-# Upload to production PyPI
-python -m twine upload dist/*
-```
-
-You'll be prompted for your PyPI credentials or API token.
-
-### 6. Push Tag and Verify
-
-After the release PR (`develop` → `main`) has been merged:
-
-```bash
-# Push the version tag created by bumpver
-git push origin --tags
-```
-
-### Authentication Options
-
-**Option 1: API Token (Recommended)**
-
-Create a PyPI API token at https://pypi.org/manage/account/token/
-
-```bash
-# Set environment variables
-export TWINE_USERNAME=__token__
-export TWINE_PASSWORD=pypi-AgEIcHlwaS5vcmc...
-
-# Or use .pypirc file
-cat > ~/.pypirc << EOF
-[pypi]
-username = __token__
-password = pypi-AgEIcHlwaS5vcmc...
-
-[testpypi]
-username = __token__
-password = pypi-AgEIcHlwaS5vcmc...
-EOF
-chmod 600 ~/.pypirc
-```
-
-**Option 2: Username/Password**
-
-Enter credentials when prompted by twine.
+Or check https://pypi.org/project/daglint/ for the new version.
 
 ## Monitoring and Maintenance
 
