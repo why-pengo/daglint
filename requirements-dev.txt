@@ -131,7 +131,7 @@ twine==6.2.0
     # via daglint (pyproject.toml)
 types-pyyaml==6.0.12.20250915
     # via daglint (pyproject.toml)
-typing-extensions==4.15.0
+typing-extensions==4.16.0
     # via mypy
 urllib3==2.7.0
     # via
