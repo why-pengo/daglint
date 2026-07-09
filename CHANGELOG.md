@@ -7,19 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-08
+
 ### Added
+- TaskFlow API support: `@dag`-decorated DAGs are detected via a shared `DagDefinition` layer, and `@task`-decorated tasks are visible to task-scoped rules (#34).
+- `@task_group` support with group-aware `task_id` semantics (#62).
+- Dynamic task mapping support: tasks created via `.expand()` / `.partial()` are recognized (#63).
+- `.override(task_id=...)` re-identification is recognized (#64).
+- `@setup` / `@teardown` decorator support (#65).
+- `doc_md_validation` rule: warn when a DAG has no `doc_md` documentation (#19).
+- `required_dag_params` now also checks inline `DAG(default_args={...})` dicts (#49).
 - `--format [text|json|github]` option on `daglint check`: `json` emits a machine-readable envelope (`issues` list plus a `summary` block), `github` emits GitHub Actions workflow commands so issues appear as inline PR annotations (#39).
 - `--strict` flag: exit non-zero on any issue, not just errors (#39).
 - Directory scans now skip hidden directories and common non-source dirs (`venv/`, `env/`, `build/`, `dist/`, `site-packages/`) by default; extend with an `exclude:` list in `.daglint.yaml` or the repeatable `--exclude` flag (#40).
 - Severity values in `.daglint.yaml` are validated on load; anything other than `error`/`warning`/`info` fails fast with a clear message (#40).
+- Automated PyPI releases from CI via Trusted Publishing (OIDC): pushing a version tag builds, checks, and publishes the package after environment approval — no stored tokens (#38).
 
 ### Changed
 - **Breaking for CI gating on warnings:** `daglint check` now exits 1 only when error-severity issues are found. Warning/info issues alone exit 0 unless `--strict` is passed. Exit code 2 means a usage error (#39).
 - A file that crashes the linter now always reports a `lint_error` issue (error severity) instead of silently passing without `--verbose`; verbose mode adds the exception type to the message (#40).
 
+### Fixed
+- `owner_validation` only checks `owner` keys inside `default_args` dicts, not unrelated dicts (#42).
+- Unknown rule names passed to `--rules` are rejected with a usage error instead of silently passing (#46).
+- `schedule_validation` messages no longer reference the removed `schedule_interval` argument (#60).
+- The default config is the single source of truth for rule defaults, so CLI and config-file behavior cannot drift (#61).
+
 ### Removed
+- No-op `--fix` flag on `daglint check`; daglint is a pure linter (#47).
 - Unused `DAGLinter.lint_directory` method; the CLI is the single collection path (#40).
 - `requirements.txt`; runtime dependencies live in `pyproject.toml` only (#40).
+
+### Security
+- Hardened GitHub Actions workflows with least-privilege permissions, enabled CodeQL scanning and Dependabot updates, and added `SECURITY.md` with a private vulnerability reporting policy (#68).
+- Bumped `urllib3` to 2.7.0 for CVE-2026-44431 / CVE-2026-44432 (#59).
 
 ## [0.6.1] - 2025-12-05
 
