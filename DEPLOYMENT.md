@@ -121,10 +121,12 @@ Open a PR from `develop` to `main` and merge it once CI passes.
 
 ### 3. Push the Tag
 
-bumpver already created the tag locally (unprefixed, e.g. `1.1.0`):
+bumpver already created the tag locally (unprefixed, e.g. `1.1.0`). Push only that
+tag — avoid `git push --tags`, which pushes every local tag and could trigger
+unintended release runs:
 
 ```bash
-git push origin --tags
+git push origin 1.1.0
 ```
 
 ### 4. Approve the Publish
