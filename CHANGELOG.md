@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- PyPI Development Status classifier updated from `3 - Alpha` to `5 - Production/Stable` (#81).
+
 ## [1.1.0] - 2026-07-08
 
 ### Added
