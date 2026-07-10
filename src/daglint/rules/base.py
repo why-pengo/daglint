@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from daglint.config import Config
 from daglint.models import LintIssue
+from daglint.rules.symbols import MATCH, SymbolTable
 
 
 class _AirflowDefinition:
@@ -177,6 +178,8 @@ class BaseRule(ABC):
         """
         self.config = {**Config.default_rule_config(self.rule_id), **(config or {})}
         self.severity = self.config.get("severity", "error")
+        self._symbols_tree: Optional[ast.AST] = None
+        self._symbols: Optional[SymbolTable] = None
 
     @property
     @abstractmethod
@@ -204,22 +207,41 @@ class BaseRule(ABC):
         """
         pass
 
-    def _is_operator_call(self, node: ast.Call) -> bool:
+    def _symbol_table(self, tree: ast.AST) -> SymbolTable:
+        """Build (or reuse) the symbol table for a file's AST.
+
+        Rules lint files one at a time, so a single-entry cache keyed
+        on tree identity avoids rebuilding the table for every
+        _find_* call within one check (#55).
+
+        Args:
+            tree: Abstract syntax tree of the file
+
+        Returns:
+            The file's SymbolTable
+        """
+        if self._symbols_tree is not tree or self._symbols is None:
+            self._symbols_tree = tree
+            self._symbols = SymbolTable(tree)
+        return self._symbols
+
+    def _is_operator_call(self, node: ast.Call, table: SymbolTable) -> bool:
         """Check if a call is an operator instantiation.
+
+        The *Operator suffix check applies to the alias-resolved origin
+        name, so `from x import FooOperator as fo` is detected and
+        `from x import Foo as FooOperator` is not (#55).
 
         Args:
             node: AST Call node to check
+            table: Symbol table of the file
 
         Returns:
             True if the call is an Operator instantiation
         """
-        if isinstance(node.func, ast.Name):
-            return node.func.id.endswith("Operator")
-        elif isinstance(node.func, ast.Attribute):
-            return node.func.attr.endswith("Operator")
-        return False
+        return table.classify_operator(node.func) == MATCH
 
-    def _is_operator_partial_call(self, node: ast.Call) -> bool:
+    def _is_operator_partial_call(self, node: ast.Call, table: SymbolTable) -> bool:
         """Check if a call is a dynamic-mapping Operator.partial(...) definition.
 
         In Airflow's dynamic task mapping, `<X>Operator.partial(task_id=...)`
@@ -230,18 +252,14 @@ class BaseRule(ABC):
 
         Args:
             node: AST Call node to check
+            table: Symbol table of the file
 
         Returns:
             True if the call is an Operator.partial(...) definition
         """
         if not (isinstance(node.func, ast.Attribute) and node.func.attr == "partial"):
             return False
-        target = node.func.value
-        if isinstance(target, ast.Name):
-            return target.id.endswith("Operator")
-        elif isinstance(target, ast.Attribute):
-            return target.attr.endswith("Operator")
-        return False
+        return table.classify_operator(node.func.value) == MATCH
 
     def _is_task_override_call(self, node: ast.Call) -> bool:
         """Check if a call re-identifies a TaskFlow task via .override(task_id=...).
@@ -264,36 +282,31 @@ class BaseRule(ABC):
             return False
         return any(keyword.arg == "task_id" for keyword in node.keywords)
 
-    def _is_dag_call(self, node: ast.Call) -> bool:
+    def _is_dag_call(self, node: ast.Call, table: SymbolTable) -> bool:
         """Check if a call is a DAG instantiation.
 
         Args:
             node: AST Call node to check
+            table: Symbol table of the file
 
         Returns:
-            True if the call is a DAG instantiation
+            True if the call resolves to Airflow's DAG
         """
-        if isinstance(node.func, ast.Name):
-            return node.func.id == "DAG"
-        elif isinstance(node.func, ast.Attribute):
-            return node.func.attr == "DAG"
-        return False
+        return table.classify(node.func, "DAG") == MATCH
 
-    def _is_dag_decorator(self, node: ast.expr) -> bool:
+    def _is_dag_decorator(self, node: ast.expr, table: SymbolTable) -> bool:
         """Check if a decorator node is an @dag decorator (bare or called).
 
         Args:
             node: Entry from a FunctionDef's decorator_list
+            table: Symbol table of the file
 
         Returns:
-            True if the decorator is @dag, @dag(...), or @<module>.dag(...)
+            True if the decorator resolves to Airflow's dag decorator
+            (bare, called, aliased, or module-qualified)
         """
         target = node.func if isinstance(node, ast.Call) else node
-        if isinstance(target, ast.Name):
-            return target.id == "dag"
-        elif isinstance(target, ast.Attribute):
-            return target.attr == "dag"
-        return False
+        return table.classify(target, "dag") == MATCH
 
     def _find_dag_definitions(self, tree: ast.AST) -> List[DagDefinition]:
         """Find every DAG definition in a file.
@@ -308,38 +321,37 @@ class BaseRule(ABC):
         Returns:
             List of normalized DAG definitions
         """
+        table = self._symbol_table(tree)
         definitions = []
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and self._is_dag_call(node):
+            if isinstance(node, ast.Call) and self._is_dag_call(node, table):
                 definitions.append(DagDefinition(call=node))
             elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 for decorator in node.decorator_list:
-                    if self._is_dag_decorator(decorator):
+                    if self._is_dag_decorator(decorator, table):
                         call = decorator if isinstance(decorator, ast.Call) else None
                         definitions.append(DagDefinition(call=call, function_name=node.name, position=decorator))
                         break
         return definitions
 
-    def _is_task_decorator(self, node: ast.expr) -> bool:
+    def _is_task_decorator(self, node: ast.expr, table: SymbolTable) -> bool:
         """Check if a decorator node is an @task decorator (bare, called, or flavored).
 
         Matches @task, @task(...), flavors like @task.branch(...), and
-        module-qualified forms like @decorators.task(...).
+        module-qualified forms like @decorators.task(...), provided the
+        chain resolves to Airflow's task decorator.
 
         Args:
             node: Entry from a FunctionDef's decorator_list
+            table: Symbol table of the file
 
         Returns:
             True if the decorator declares a TaskFlow task
         """
         target = node.func if isinstance(node, ast.Call) else node
-        while isinstance(target, ast.Attribute):
-            if target.attr == "task":
-                return True
-            target = target.value
-        return isinstance(target, ast.Name) and target.id == "task"
+        return table.classify_chain(target, "task") == MATCH
 
-    def _is_setup_teardown_decorator(self, node: ast.expr) -> bool:
+    def _is_setup_teardown_decorator(self, node: ast.expr, table: SymbolTable) -> bool:
         """Check if a decorator node is @setup or @teardown.
 
         Both decorators turn a plain function into a TaskFlow task whose
@@ -351,49 +363,40 @@ class BaseRule(ABC):
 
         Args:
             node: Entry from a FunctionDef's decorator_list
+            table: Symbol table of the file
 
         Returns:
             True if the decorator is @setup, @teardown, @teardown(...),
             or a module-qualified form of either
         """
         target = node.func if isinstance(node, ast.Call) else node
-        if isinstance(target, ast.Name):
-            return target.id in ("setup", "teardown")
-        elif isinstance(target, ast.Attribute):
-            return target.attr in ("setup", "teardown")
-        return False
+        return MATCH in (table.classify(target, "setup"), table.classify(target, "teardown"))
 
-    def _is_task_group_call(self, node: ast.Call) -> bool:
+    def _is_task_group_call(self, node: ast.Call, table: SymbolTable) -> bool:
         """Check if a call is a TaskGroup instantiation.
 
         Args:
             node: AST Call node to check
+            table: Symbol table of the file
 
         Returns:
-            True if the call is a TaskGroup instantiation
+            True if the call resolves to Airflow's TaskGroup
         """
-        if isinstance(node.func, ast.Name):
-            return node.func.id == "TaskGroup"
-        elif isinstance(node.func, ast.Attribute):
-            return node.func.attr == "TaskGroup"
-        return False
+        return table.classify(node.func, "TaskGroup") == MATCH
 
-    def _is_task_group_decorator(self, node: ast.expr) -> bool:
+    def _is_task_group_decorator(self, node: ast.expr, table: SymbolTable) -> bool:
         """Check if a decorator node is an @task_group decorator (bare or called).
 
         Args:
             node: Entry from a FunctionDef's decorator_list
+            table: Symbol table of the file
 
         Returns:
-            True if the decorator is @task_group, @task_group(...), or
-            @<module>.task_group(...)
+            True if the decorator resolves to Airflow's task_group
+            decorator (bare, called, aliased, or module-qualified)
         """
         target = node.func if isinstance(node, ast.Call) else node
-        if isinstance(target, ast.Name):
-            return target.id == "task_group"
-        elif isinstance(target, ast.Attribute):
-            return target.attr == "task_group"
-        return False
+        return table.classify(target, "task_group") == MATCH
 
     def _group_segment(self, definition: TaskGroupDefinition) -> Optional[str]:
         """Segment a group contributes to the effective IDs of nested tasks.
@@ -445,34 +448,44 @@ class BaseRule(ABC):
         Returns:
             List of normalized task definitions
         """
+        table = self._symbol_table(tree)
         definitions: List[TaskDefinition] = []
         for node in ast.iter_child_nodes(tree):
-            self._collect_task_definitions(node, (), definitions)
+            self._collect_task_definitions(node, (), definitions, table)
         return definitions
 
-    def _collect_task_definitions(self, node: ast.AST, prefix: Tuple[str, ...], definitions: List[TaskDefinition]) -> None:
+    def _collect_task_definitions(
+        self, node: ast.AST, prefix: Tuple[str, ...], definitions: List[TaskDefinition], table: SymbolTable
+    ) -> None:
         """Recursively collect task definitions, tracking the group-prefix stack.
 
         Args:
             node: Node to visit
             prefix: Group ID segments of the enclosing task groups
             definitions: Accumulator for found task definitions
+            table: Symbol table of the file
         """
         if isinstance(node, (ast.With, ast.AsyncWith)):
-            self._collect_from_with(node, prefix, definitions)
+            self._collect_from_with(node, prefix, definitions, table)
             return
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            self._collect_from_function(node, prefix, definitions)
+            self._collect_from_function(node, prefix, definitions, table)
             return
         if isinstance(node, ast.Call) and (
-            self._is_operator_call(node) or self._is_operator_partial_call(node) or self._is_task_override_call(node)
+            self._is_operator_call(node, table)
+            or self._is_operator_partial_call(node, table)
+            or self._is_task_override_call(node)
         ):
             definitions.append(TaskDefinition(call=node, group_prefix=prefix))
         for child in ast.iter_child_nodes(node):
-            self._collect_task_definitions(child, prefix, definitions)
+            self._collect_task_definitions(child, prefix, definitions, table)
 
     def _collect_from_with(
-        self, node: Union[ast.With, ast.AsyncWith], prefix: Tuple[str, ...], definitions: List[TaskDefinition]
+        self,
+        node: Union[ast.With, ast.AsyncWith],
+        prefix: Tuple[str, ...],
+        definitions: List[TaskDefinition],
+        table: SymbolTable,
     ) -> None:
         """Collect tasks from a with statement, entering TaskGroup scopes.
 
@@ -480,24 +493,26 @@ class BaseRule(ABC):
             node: The With/AsyncWith node
             prefix: Group ID segments of the enclosing task groups
             definitions: Accumulator for found task definitions
+            table: Symbol table of the file
         """
         body_prefix = prefix
         for item in node.items:
             context = item.context_expr
-            if isinstance(context, ast.Call) and self._is_task_group_call(context):
+            if isinstance(context, ast.Call) and self._is_task_group_call(context, table):
                 segment = self._group_segment(TaskGroupDefinition(call=context))
                 if segment is not None:
                     body_prefix = body_prefix + (segment,)
             else:
-                self._collect_task_definitions(context, prefix, definitions)
+                self._collect_task_definitions(context, prefix, definitions, table)
         for child in node.body:
-            self._collect_task_definitions(child, body_prefix, definitions)
+            self._collect_task_definitions(child, body_prefix, definitions, table)
 
     def _collect_from_function(
         self,
         node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
         prefix: Tuple[str, ...],
         definitions: List[TaskDefinition],
+        table: SymbolTable,
     ) -> None:
         """Collect tasks from a function definition, entering @task_group scopes.
 
@@ -505,17 +520,18 @@ class BaseRule(ABC):
             node: The FunctionDef/AsyncFunctionDef node
             prefix: Group ID segments of the enclosing task groups
             definitions: Accumulator for found task definitions
+            table: Symbol table of the file
         """
         body_prefix = prefix
         group_decorator = None
         task_decorator = None
         setup_teardown_decorator = None
         for decorator in node.decorator_list:
-            if group_decorator is None and self._is_task_group_decorator(decorator):
+            if group_decorator is None and self._is_task_group_decorator(decorator, table):
                 group_decorator = decorator
-            elif task_decorator is None and self._is_task_decorator(decorator):
+            elif task_decorator is None and self._is_task_decorator(decorator, table):
                 task_decorator = decorator
-            elif setup_teardown_decorator is None and self._is_setup_teardown_decorator(decorator):
+            elif setup_teardown_decorator is None and self._is_setup_teardown_decorator(decorator, table):
                 setup_teardown_decorator = decorator
 
         if group_decorator is not None:
@@ -534,7 +550,7 @@ class BaseRule(ABC):
 
         for child in ast.iter_child_nodes(node):
             child_prefix = body_prefix if child in node.body else prefix
-            self._collect_task_definitions(child, child_prefix, definitions)
+            self._collect_task_definitions(child, child_prefix, definitions, table)
 
     def _find_task_group_definitions(self, tree: ast.AST) -> List[TaskGroupDefinition]:
         """Find every task group definition in a file.
@@ -549,13 +565,14 @@ class BaseRule(ABC):
         Returns:
             List of normalized task group definitions
         """
+        table = self._symbol_table(tree)
         definitions = []
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and self._is_task_group_call(node):
+            if isinstance(node, ast.Call) and self._is_task_group_call(node, table):
                 definitions.append(TaskGroupDefinition(call=node))
             elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 for decorator in node.decorator_list:
-                    if self._is_task_group_decorator(decorator):
+                    if self._is_task_group_decorator(decorator, table):
                         call = decorator if isinstance(decorator, ast.Call) else None
                         definitions.append(TaskGroupDefinition(call=call, function_name=node.name, position=decorator))
                         break

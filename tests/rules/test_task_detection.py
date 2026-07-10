@@ -8,8 +8,8 @@ from daglint.rules import NoDuplicateTaskIDsRule, TaskIDConventionRule
 
 # The same violating task — bad task ID — spelled six ways.
 SPELLINGS = {
-    "operator": "t = PythonOperator(task_id='BadTaskName')\n",
-    "operator_attribute": "t = operators.PythonOperator(task_id='BadTaskName')\n",
+    "operator": "from airflow.operators.python import PythonOperator\nt = PythonOperator(task_id='BadTaskName')\n",
+    "operator_attribute": "import airflow.operators.python as operators\nt = operators.PythonOperator(task_id='BadTaskName')\n",
     "taskflow_bare": "from airflow.decorators import task\n\n@task\ndef BadTaskName():\n    pass\n",
     "taskflow_call": "from airflow.decorators import task\n\n@task()\ndef BadTaskName():\n    pass\n",
     "taskflow_flavor": "from airflow.decorators import task\n\n@task.branch\ndef BadTaskName():\n    pass\n",

@@ -19,6 +19,15 @@ A linting tool for Apache Airflow DAG files. Uses Python's AST to enforce standa
 | `max_active_runs_validation` | Ensures `max_active_runs` is explicitly set |
 | `catchup_validation` | Checks `catchup` is explicitly set |
 | `schedule_validation` | Ensures `schedule_interval` / `schedule` is set |
+| `doc_md_validation` | Warns when a DAG has no `doc_md` documentation |
+| `unresolved_airflow_symbol` | Flags Airflow-looking names not traceable to any import |
+
+Detection is import-aware: a name only counts as a DAG, task, or task group when it
+is traceable to its Airflow origin, so aliased imports (`from airflow import DAG as Dag`)
+are detected and same-named symbols from other libraries are not. Names that look like
+Airflow constructs but have no binding at all (star imports from non-airflow modules,
+generated fragments) are reported by `unresolved_airflow_symbol` at `info` severity
+instead of being silently skipped.
 
 ## Installation
 
@@ -198,6 +207,8 @@ src/daglint/
     naming.py         # dag_id_convention, task_id_convention, group_id_convention
     configuration.py  # retry_configuration, schedule_validation, catchup_validation
     validation.py     # no_duplicate_task_ids
+    resolution.py     # unresolved_airflow_symbol
+    symbols.py        # SymbolTable: import-alias resolution for detection
     metadata/         # owner_validation, tag_requirements, required_dag_params,
                       # max_active_runs_validation, doc_md_validation
 tests/

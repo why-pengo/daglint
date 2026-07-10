@@ -14,6 +14,7 @@ from daglint.rules import NoDuplicateTaskIDsRule, TaskIDConventionRule
 def test_partial_task_id_is_validated():
     """task_id passed to Operator.partial(...) gets naming validation."""
     code = """
+from airflow.operators.python import PythonOperator
 t = PythonOperator.partial(task_id="BadMappedName", python_callable=f).expand(op_args=[[1]])
 """
     tree = ast.parse(code)
@@ -26,6 +27,7 @@ t = PythonOperator.partial(task_id="BadMappedName", python_callable=f).expand(op
 def test_mapped_task_collides_with_regular_task():
     """A mapped task and a regular task with the same id are duplicates."""
     code = """
+from airflow.operators.python import PythonOperator
 t1 = PythonOperator.partial(task_id="copy_files", python_callable=f).expand(op_args=[[1]])
 t2 = PythonOperator(task_id="copy_files", python_callable=f)
 """
@@ -39,6 +41,7 @@ t2 = PythonOperator(task_id="copy_files", python_callable=f)
 def test_two_mapped_tasks_with_same_id_are_duplicates():
     """Two .partial() definitions with the same task_id are duplicates."""
     code = """
+from airflow.operators.python import PythonOperator
 t1 = PythonOperator.partial(task_id="copy_files", python_callable=f).expand(op_args=[[1]])
 t2 = PythonOperator.partial(task_id="copy_files", python_callable=g).expand(op_args=[[2]])
 """
@@ -51,6 +54,7 @@ t2 = PythonOperator.partial(task_id="copy_files", python_callable=g).expand(op_a
 def test_module_qualified_operator_partial_detected():
     """<module>.<X>Operator.partial(...) is detected like a direct call."""
     code = """
+import airflow.operators.python as operators
 t = operators.PythonOperator.partial(task_id="BadMappedName").expand(op_args=[[1]])
 """
     tree = ast.parse(code)
@@ -62,6 +66,8 @@ t = operators.PythonOperator.partial(task_id="BadMappedName").expand(op_args=[[1
 def test_partial_inside_task_group_gets_group_prefix():
     """Mapped tasks inside a TaskGroup carry the group prefix (#51 semantics)."""
     code = """
+from airflow.operators.python import PythonOperator
+from airflow.utils.task_group import TaskGroup
 with TaskGroup("extract") as tg:
     t1 = PythonOperator.partial(task_id="fetch", python_callable=f).expand(op_args=[[1]])
     t2 = PythonOperator(task_id="fetch", python_callable=f)
@@ -78,6 +84,7 @@ t3 = PythonOperator(task_id="fetch", python_callable=f)
 def test_partial_without_task_id_is_skipped():
     """A .partial() without a static task_id cannot be validated."""
     code = """
+from airflow.operators.python import PythonOperator
 t1 = PythonOperator.partial(task_id=TASK_NAME, python_callable=f).expand(op_args=[[1]])
 t2 = PythonOperator.partial(python_callable=f).expand(op_args=[[1]])
 """

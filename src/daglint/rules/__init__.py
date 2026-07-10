@@ -16,6 +16,7 @@ from daglint.rules.metadata import (
     TagRequirementsRule,
 )
 from daglint.rules.naming import DAGIDConventionRule, GroupIDConventionRule, TaskIDConventionRule
+from daglint.rules.resolution import UnresolvedAirflowSymbolRule
 from daglint.rules.validation import NoDuplicateTaskIDsRule
 
 # Registry of all available rules
@@ -32,6 +33,7 @@ AVAILABLE_RULES: Dict[str, Type[BaseRule]] = {
     "max_active_runs_validation": MaxActiveRunsValidationRule,
     "catchup_validation": CatchupValidationRule,
     "schedule_validation": ScheduleValidationRule,
+    "unresolved_airflow_symbol": UnresolvedAirflowSymbolRule,
 }
 
 __all__ = [
@@ -47,5 +49,6 @@ __all__ = [
     "MaxActiveRunsValidationRule",
     "CatchupValidationRule",
     "ScheduleValidationRule",
+    "UnresolvedAirflowSymbolRule",
     "AVAILABLE_RULES",
 ]

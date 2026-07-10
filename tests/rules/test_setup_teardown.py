@@ -31,6 +31,7 @@ def test_teardown_called_form_is_a_task():
     """@teardown(...) with kwargs is detected like the bare form."""
     code = """
 from airflow.decorators import teardown
+from airflow.operators.empty import EmptyOperator
 
 @teardown(on_failure_fail_dagrun=True)
 def delete_cluster():
@@ -67,6 +68,7 @@ def test_stacked_task_decorator_provides_explicit_id():
     """@setup stacked over @task(task_id=...) uses the explicit id, once."""
     code = """
 from airflow.decorators import setup, task
+from airflow.operators.empty import EmptyOperator
 
 @setup
 @task(task_id="explicit_id")

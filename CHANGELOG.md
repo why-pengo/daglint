@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Import-alias resolution for DAG/task detection: a per-file symbol table maps local names to their origins, so aliased imports (`from airflow import DAG as Dag`, `import airflow.decorators as ad` + `@ad.task.branch`) are detected, including Airflow 3's `airflow.sdk` origins. The `*Operator` suffix check now applies to the alias-resolved origin name, and locally defined operator classes are recognized (#55).
+- `unresolved_airflow_symbol` rule (info severity): flags names that match DAG/task/task-group detection heuristics but are not traceable to any import or local definition, so untraceable files surface instead of silently linting green (#55).
+
 ### Changed
+- **Detection is now strict (#55):** airflow-owned symbols (`DAG`, `@dag`, `@task`, `@task_group`, `TaskGroup`, `@setup`/`@teardown`) only match when traceable to an airflow origin. Same-named symbols imported from other libraries no longer false-positive, and names with no binding are reported by `unresolved_airflow_symbol` instead of being matched. Files relying on `from <non-airflow module> import *` re-exports will see their DAGs skipped (with the info-level warning) until imports are made explicit.
 - PyPI Development Status classifier updated from `3 - Alpha` to `5 - Production/Stable` (#81).
 
 ## [1.1.0] - 2026-07-08

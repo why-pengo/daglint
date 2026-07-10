@@ -138,6 +138,7 @@ dag = DAG(
     def test_inline_default_args_valid_owner(self):
         """Test that default_args passed inline to DAG() is validated."""
         code = """
+from airflow import DAG
 dag = DAG(
     dag_id="my_dag",
     default_args={'owner': 'data-team'},
@@ -151,6 +152,7 @@ dag = DAG(
     def test_inline_default_args_invalid_owner(self):
         """Test that invalid owners in inline default_args are caught."""
         code = """
+from airflow import DAG
 dag = DAG(
     dag_id="my_dag",
     default_args={'owner': 'invalid-team'},
@@ -165,6 +167,7 @@ dag = DAG(
     def test_inline_default_args_missing_owner(self):
         """Test that a missing owner key in inline default_args is caught."""
         code = """
+from airflow import DAG
 dag = DAG(
     dag_id="my_dag",
     default_args={'retries': 2},
@@ -194,6 +197,7 @@ with TaskGroup("group", default_args={'retries': 1}):
     def test_attribute_dag_call_inline_default_args_validated(self):
         """Test that models.DAG(default_args={...}) is still validated."""
         code = """
+from airflow import models
 dag = models.DAG(
     dag_id="my_dag",
     default_args={'retries': 2},
@@ -235,6 +239,7 @@ default_args = {
     def test_no_default_args_no_issues(self):
         """Test that a file without default_args produces no owner issues."""
         code = """
+from airflow import DAG
 dag = DAG(dag_id="my_dag")
 
 t1 = PythonOperator(

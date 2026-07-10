@@ -65,3 +65,7 @@ rules:
   doc_md_validation:
     enabled: true
     severity: warning
+
+  unresolved_airflow_symbol:
+    enabled: true
+    severity: info

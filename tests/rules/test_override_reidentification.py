@@ -49,6 +49,7 @@ process.override(task_id="process_b")(2)
 def test_override_colliding_with_operator_id_is_a_duplicate():
     """An override id colliding with a classic operator's id is flagged."""
     code = """
+from airflow.operators.python import PythonOperator
 process.override(task_id="fetch")(1)
 t = PythonOperator(task_id="fetch", python_callable=f)
 """

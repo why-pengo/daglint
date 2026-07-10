@@ -38,6 +38,7 @@ with TaskGroup("ExtractTasks") as tg:
     def test_group_id_keyword_arg(self):
         """Test that group_id passed as a keyword argument is validated."""
         code = """
+from airflow.utils.task_group import TaskGroup
 with TaskGroup(group_id="Extract-Tasks") as tg:
     pass
 """
@@ -50,6 +51,7 @@ with TaskGroup(group_id="Extract-Tasks") as tg:
     def test_assignment_form_validated(self):
         """Test that TaskGroup instantiations outside a with block are validated."""
         code = """
+from airflow.utils.task_group import TaskGroup
 tg = TaskGroup("BadName", dag=dag)
 """
         tree = ast.parse(code)
@@ -60,6 +62,7 @@ tg = TaskGroup("BadName", dag=dag)
     def test_attribute_call_form_validated(self):
         """Test that <module>.TaskGroup(...) is validated."""
         code = """
+from airflow.utils import task_group
 with task_group.TaskGroup("BadName") as tg:
     pass
 """
@@ -135,6 +138,7 @@ def my_group():
     def test_nested_groups_all_validated(self):
         """Every group in a nested structure is validated individually."""
         code = """
+from airflow.utils.task_group import TaskGroup
 with TaskGroup("outer_group") as outer:
     with TaskGroup("InnerGroup") as inner:
         pass
