@@ -16,11 +16,12 @@ DAG_SCOPED_RULES = [
     "max_active_runs_validation",
 ]
 
-# The same minimal DAG — violating every DAG-scoped rule — spelled five ways.
+# The same minimal DAG — violating every DAG-scoped rule — spelled six ways.
 SPELLINGS = {
-    "bare_name": "dag = DAG('InvalidDAGID')\n",
+    "bare_name": "from airflow import DAG\ndag = DAG('InvalidDAGID')\n",
+    "aliased": "from airflow import DAG as Dag\ndag = Dag('InvalidDAGID')\n",
     "attribute": "import airflow\ndag = airflow.DAG('InvalidDAGID')\n",
-    "context_manager": "with DAG('InvalidDAGID') as dag:\n    pass\n",
+    "context_manager": "from airflow import DAG\nwith DAG('InvalidDAGID') as dag:\n    pass\n",
     "taskflow": "from airflow.decorators import dag\n\n@dag('InvalidDAGID')\ndef my_pipeline():\n    pass\n",
     "taskflow_bare": "from airflow.decorators import dag\n\n@dag\ndef InvalidDAGID():\n    pass\n",
 }

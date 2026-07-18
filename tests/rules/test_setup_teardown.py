@@ -10,12 +10,16 @@ import ast
 
 from daglint.rules import NoDuplicateTaskIDsRule, TaskIDConventionRule
 
+IMPORTS = """
+from airflow.decorators import setup, teardown, task
+from airflow.operators.empty import EmptyOperator
+from airflow.utils.task_group import TaskGroup
+"""
+
 
 def test_setup_function_name_is_validated():
     """@setup functions are tasks; their names get naming validation."""
-    code = """
-from airflow.decorators import setup
-
+    code = IMPORTS + """
 @setup
 def CreateCluster():
     pass
@@ -29,9 +33,7 @@ def CreateCluster():
 
 def test_teardown_called_form_is_a_task():
     """@teardown(...) with kwargs is detected like the bare form."""
-    code = """
-from airflow.decorators import teardown
-
+    code = IMPORTS + """
 @teardown(on_failure_fail_dagrun=True)
 def delete_cluster():
     pass
@@ -47,9 +49,7 @@ t = EmptyOperator(task_id="delete_cluster")
 
 def test_distinct_setup_and_teardown_tasks_are_clean():
     """Well-named, distinct setup/teardown tasks raise nothing."""
-    code = """
-from airflow.decorators import setup, teardown
-
+    code = IMPORTS + """
 @setup
 def create_cluster():
     pass
@@ -65,9 +65,7 @@ def delete_cluster():
 
 def test_stacked_task_decorator_provides_explicit_id():
     """@setup stacked over @task(task_id=...) uses the explicit id, once."""
-    code = """
-from airflow.decorators import setup, task
-
+    code = IMPORTS + """
 @setup
 @task(task_id="explicit_id")
 def create_cluster():
@@ -84,7 +82,7 @@ t = EmptyOperator(task_id="explicit_id")
 
 def test_setup_inside_task_group_gets_group_prefix():
     """Setup/teardown tasks in a group carry the group prefix (#51)."""
-    code = """
+    code = IMPORTS + """
 with TaskGroup("cluster") as tg:
     @setup
     def create():
@@ -114,9 +112,9 @@ def BadTeardownName():
 
 def test_as_setup_and_as_teardown_are_call_sites():
     """.as_setup()/.as_teardown() convert existing tasks; no new definition."""
-    code = """
+    code = IMPORTS + """
 t1 = EmptyOperator(task_id="cleanup").as_teardown()
-t2 = create_cluster().as_setup()
+t2 = EmptyOperator(task_id="create_cluster").as_setup()
 """
     tree = ast.parse(code)
     convention_issues = TaskIDConventionRule().check(tree, "test.py", code)

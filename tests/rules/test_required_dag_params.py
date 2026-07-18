@@ -123,6 +123,8 @@ default_args = {
     def test_multiple_default_args(self):
         """Test that only the variable named 'default_args' is validated."""
         code = """
+from airflow import DAG
+
 default_args = {
     'owner': 'airflow',
     'start_date': '2023-01-01'
@@ -154,6 +156,7 @@ default_args = {
     def test_inline_default_args_missing_params(self):
         """Test that inline DAG(default_args={...}) missing params is caught (#41)."""
         code = """
+from airflow import DAG
 dag = DAG(
     dag_id='my_dag',
     default_args={'owner': 'airflow'},
@@ -168,6 +171,7 @@ dag = DAG(
     def test_inline_default_args_all_params_present(self):
         """Test that inline default_args with all required params passes (#41)."""
         code = """
+from airflow import DAG
 dag = DAG(
     dag_id='my_dag',
     default_args={'owner': 'airflow', 'start_date': '2023-01-01', 'retries': 3},
@@ -181,6 +185,8 @@ dag = DAG(
     def test_assignment_and_inline_forms_both_checked(self):
         """Test that assignment and a separate inline default_args are each validated."""
         code = """
+from airflow import DAG
+
 default_args = {
     'owner': 'airflow',
     'start_date': '2023-01-01'

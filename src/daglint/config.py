@@ -122,6 +122,10 @@ class Config:
                     "enabled": True,
                     "severity": "warning",
                 },
+                "unresolved_airflow_symbol": {
+                    "enabled": True,
+                    "severity": "info",
+                },
             }
         }
 
