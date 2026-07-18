@@ -54,24 +54,27 @@ class SymbolTable:
     """
 
     def __init__(self, tree: ast.AST):
-        """Build the table from a file's AST.
-
-        Args:
-            tree: Abstract syntax tree of the file
-        """
+        """Build the table from a file's AST."""
         self._bindings: Dict[str, str] = {}
         self._airflow_star = False
         local_names: List[str] = []
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                self._bind_import(node)
-            elif isinstance(node, ast.ImportFrom):
-                self._bind_import_from(node)
-            elif isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
-                local_names.append(node.name)
+
+        # Scope the collection to top-level nodes
+        nodes = getattr(tree, "body", ast.walk(tree))
+        for node in nodes:
+            self._process_node(node, local_names)
+
         # setdefault so imports win over local definitions of the same name
         for name in local_names:
             self._bindings.setdefault(name, f"{_LOCAL_ORIGIN}.{name}")
+
+    def _process_node(self, node: ast.AST, local_names: List[str]) -> None:
+        if isinstance(node, ast.Import):
+            self._bind_import(node)
+        elif isinstance(node, ast.ImportFrom):
+            self._bind_import_from(node)
+        elif isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            local_names.append(node.name)
 
     def _bind_import(self, node: ast.Import) -> None:
         for alias in node.names:
