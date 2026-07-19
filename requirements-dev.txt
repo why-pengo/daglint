@@ -112,7 +112,7 @@ pytokens==0.4.1
     # via black
 pyyaml==6.0.3
     # via daglint (pyproject.toml)
-readme-renderer==44.0
+readme-renderer==45.0
     # via twine
 requests==2.33.0
     # via
