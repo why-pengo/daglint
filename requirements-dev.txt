@@ -68,7 +68,7 @@ mypy-extensions==1.1.0
     # via
     #   black
     #   mypy
-nh3==0.3.2
+nh3==0.3.6
     # via readme-renderer
 packaging==25.0
     # via
