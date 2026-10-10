@@ -10,7 +10,7 @@ build==1.5.0
     # via
     #   daglint (pyproject.toml)
     #   pip-tools
-bumpver==2025.1131
+bumpver==2026.1132
     # via daglint (pyproject.toml)
 certifi==2026.6.17
     # via requests
@@ -129,7 +129,7 @@ toml==0.10.2
     # via bumpver
 twine==6.2.0
     # via daglint (pyproject.toml)
-types-pyyaml==6.0.12.20250915
+types-pyyaml==6.0.12.20260724
     # via daglint (pyproject.toml)
 typing-extensions==4.16.0
     # via mypy
