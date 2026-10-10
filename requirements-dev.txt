@@ -83,7 +83,7 @@ pathspec==1.1.1
     #   mypy
 pip-tools==7.6.0
     # via daglint (pyproject.toml)
-platformdirs==4.5.1
+platformdirs==4.12.3
     # via black
 pluggy==1.6.0
     # via
